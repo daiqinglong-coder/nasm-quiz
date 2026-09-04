@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>NASM-CPT 刷题</title>
+<style>
+  :root {
+    --bg: #F5F5F3;
+    --card: #FFFFFF;
+    --text: #1A1A1A;
+    --sub: #666666;
+    --light: #AAAAAA;
+    --border: #E5E5E2;
+    --green: #2D9E6B;
+    --green-bg: #EAF7F1;
+    --red: #D94F3D;
+    --red-bg: #FDECEA;
+    --blue: #3A72C8;
+    --blue-bg: #EBF1FC;
+    --yellow: #D4820A;
+    --yellow-bg: #FEF3DC;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding-bottom: 80px;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 14px 20px 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .topbar-back { font-size: 22px; cursor: pointer; color: var(--blue); display: none; padding: 2px 6px 2px 0; }
+  .topbar-title { font-size: 17px; font-weight: 600; flex: 1; }
+  .topbar-badge { font-size: 12px; color: var(--sub); background: var(--bg); border-radius: 20px; padding: 3px 10px; }
+  #home { padding: 24px 20px; }
+  .hello { margin-bottom: 24px; }
+  .hello-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .hello-sub { font-size: 14px; color: var(--sub); }
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 28px; }
+  .stat-card { background: var(--card); border-radius: var(--radius); padding: 14px 12px; text-align: center; box-shadow: var(--shadow); }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--blue); }
+  .stat-lbl { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--sub); margin-bottom: 12px; letter-spacing: 0.03em; }
+  .chapter-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .chapter-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px 18px; display: flex; align-items: center;
+    gap: 14px; box-shadow: var(--shadow); cursor: pointer;
+    transition: transform 0.12s; border: 1.5px solid transparent;
+  }
+  .chapter-card:active { transform: scale(0.98); }
+  .chapter-card.has-wrong { border-color: var(--red); }
+  .ch-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .ch-info { flex: 1; }
+  .ch-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .ch-meta { font-size: 12px; color: var(--sub); }
+  .ch-progress { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .ch-progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .ch-arrow { color: var(--light); font-size: 16px; }
+  .action-btn { width: 100%; padding: 16px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .action-btn:active { opacity: 0.8; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-wrong { background: var(--red-bg); color: var(--red); }
+  .btn-row { display: flex; flex-direction: column; gap: 10px; }
+  #quiz { display: none; padding: 16px 20px; }
+  .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--border); z-index: 200; }
+  .progress-fill { height: 100%; background: var(--blue); transition: width 0.3s; border-radius: 0 2px 2px 0; }
+  .q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .q-counter { font-size: 13px; color: var(--sub); }
+  .q-bookmark { font-size: 22px; cursor: pointer; padding: 4px; transition: transform 0.15s; }
+  .q-bookmark:active { transform: scale(1.3); }
+  .q-chapter-tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: var(--blue-bg); color: var(--blue); margin-bottom: 12px; }
+  .q-text { font-size: 17px; font-weight: 600; line-height: 1.55; margin-bottom: 24px; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    font-size: 15px; line-height: 1.4;
+  }
+  .option:active { background: var(--bg); }
+  .opt-dot { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; font-weight: 600; transition: all 0.15s; }
+  .option.correct { border-color: var(--green); background: var(--green-bg); }
+  .option.correct .opt-dot { background: var(--green); border-color: var(--green); color: white; }
+  .option.wrong { border-color: var(--red); background: var(--red-bg); }
+  .option.wrong .opt-dot { background: var(--red); border-color: var(--red); color: white; }
+  .option.dim { opacity: 0.45; }
+  .explanation { margin-top: 16px; padding: 14px 16px; background: var(--yellow-bg); border-radius: var(--radius); border-left: 3px solid var(--yellow); font-size: 14px; line-height: 1.6; color: #4A3800; display: none; }
+  .explanation.show { display: block; }
+  .exp-label { font-weight: 700; margin-bottom: 4px; color: var(--yellow); font-size: 12px; }
+  .q-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 20px 28px; background: var(--bg); border-top: 1px solid var(--border); }
+  .next-btn { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; display: none; transition: opacity 0.15s; }
+  .next-btn:active { opacity: 0.8; }
+  #result { display: none; padding: 24px 20px; text-align: center; }
+  .result-emoji { font-size: 64px; margin-bottom: 16px; }
+  .result-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .result-sub { font-size: 15px; color: var(--sub); margin-bottom: 32px; }
+  .result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+  .result-stat { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+  .rs-num { font-size: 28px; font-weight: 700; }
+  .rs-lbl { font-size: 12px; color: var(--sub); margin-top: 4px; }
+  .result-btns { display: flex; flex-direction: column; gap: 10px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { animation: fadeUp 0.25s ease; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-back" id="backBtn" onclick="goHome()">‹</span>
+  <span class="topbar-title" id="topTitle">NASM-CPT 刷题</span>
+  <span class="topbar-badge" id="topBadge"></span>
+</div>
+<div class="progress-bar" id="progressBar" style="display:none">
+  <div class="progress-fill" id="progressFill"></div>
+</div>
+
+<!-- 首页 -->
+<div id="home">
+  <div class="hello">
+    <div class="hello-title">备考加油 🍅</div>
+    <div class="hello-sub">选择章节开始练习，或随机刷全部题目</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-lbl">已答题数</div></div>
+    <div class="stat-card"><div class="stat-num" id="statAcc" style="color:var(--green)">—</div><div class="stat-lbl">正确率</div></div>
+    <div class="stat-card"><div class="stat-num" id="statWrong" style="color:var(--red)">0</div><div class="stat-lbl">错题数</div></div>
+  </div>
+  <div class="section-title">按章节练习</div>
+  <div class="chapter-list" id="chapterList"></div>
+  <div class="btn-row">
+    <button class="action-btn btn-primary" onclick="startQuiz('all')">🎲 随机刷全部题目</button>
+    <button class="action-btn btn-wrong" id="wrongBtn" onclick="startQuiz('wrong')" style="display:none">⚠️ 专项练习错题</button>
+  </div>
+</div>
+
+<!-- 答题页 -->
+<div id="quiz">
+  <div class="q-header">
+    <span class="q-counter" id="qCounter"></span>
+    <span class="q-bookmark" id="bookmark" onclick="toggleBookmark()">☆</span>
+  </div>
+  <div class="q-chapter-tag" id="qChapterTag"></div>
+  <div class="q-text" id="qText"></div>
+  <div class="options" id="options"></div>
+  <div class="explanation" id="explanation">
+    <div class="exp-label">💡 解析</div>
+    <div id="expText"></div>
+  </div>
+  <div style="height:80px"></div>
+  <div class="q-footer">
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">继续</button>
+  </div>
+</div>
+
+<!-- 结果页 -->
+<div id="result">
+  <div class="result-emoji" id="resultEmoji"></div>
+  <div class="result-title" id="resultTitle"></div>
+  <div class="result-sub" id="resultSub"></div>
+  <div class="result-stats">
+    <div class="result-stat"><div class="rs-num" id="rs1"></div><div class="rs-lbl">答对题数</div></div>
+    <div class="result-stat"><div class="rs-num" id="rs2" style="color:var(--red)"></div><div class="rs-lbl">答错题数</div></div>
+    <div class="result-stat"><div class="rs-num" id="rs3" style="color:var(--blue)"></div><div class="rs-lbl">正确率</div></div>
+    <div class="result-stat"><div class="rs-num" id="rs4" style="color:var(--yellow)"></div><div class="rs-lbl">收藏题数</div></div>
+  </div>
+  <div class="result-btns">
+    <button class="action-btn btn-primary" onclick="goHome()">返回首页</button>
+    <button class="action-btn btn-wrong" id="retryWrongBtn" onclick="startQuiz('wrong')" style="display:none">再练错题</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  // ══ Ch1-2 执业范围与行为改变 ══
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"以下哪项超出了NASM认证私人教练（CPT）的执业范围？",
+   opts:["设计渐进式阻力训练计划","为客户提供具体的治疗饮食方案","进行体能评估和动作筛查","教授正确的运动技术"],
+   ans:1, exp:"CPT执业范围不包括为特定医疗状况提供治疗性饮食建议，这属于注册营养师（RD）职责。CPT可提供一般营养教育，但不能针对疾病开具饮食处方。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"处于行为改变「沉思阶段」（Contemplation）的客户特征是？",
+   opts:["完全没有考虑运动","正在积极运动但不足6个月","意识到需要改变并计划6个月内行动","已规律运动超过6个月"],
+   ans:2, exp:"沉思阶段：客户认识到需要改变，计划在未来6个月内行动，但尚未开始。前沉思=未考虑；准备=计划1个月内；行动=改变不足6个月；维持=超过6个月。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"PAR-Q（体力活动准备问卷）的主要用途是？",
+   opts:["评估客户体能水平","筛查是否需要运动前咨询医生","制定营养计划","评估心理健康状况"],
+   ans:1, exp:"PAR-Q是运动前健康筛查工具，用于识别需要先咨询医生再开始运动计划的人群，是CPT必须使用的首要风险筛查工具。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「自我效能感」（Self-efficacy）指的是？",
+   opts:["客户对运动的整体兴趣","客户相信自己能成功完成特定任务的信心","客户的实际体能水平","社会环境对客户的影响"],
+   ans:1, exp:"自我效能感（班杜拉理论）是个人对自己能完成特定任务的信念和信心。高自我效能感的客户更可能坚持训练计划，是行为改变的重要预测因素。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"知情同意书（Informed Consent）的主要目的是？",
+   opts:["完全免除教练所有法律责任","确认客户了解潜在风险并自愿参与","证明客户体能符合训练要求","替代医疗健康问卷"],
+   ans:1, exp:"知情同意书确保客户在充分了解训练潜在风险的前提下自愿参与。它不能完全免除教练过失责任，也不替代PAR-Q或医疗问卷。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"以下哪种沟通方式最符合NASM建议？",
+   opts:["以专业权威姿态告知客户应做什么","主要用封闭式问题快速收集信息","运用动机性访谈，以开放式问题引导","避免讨论客户个人生活和情绪"],
+   ans:2, exp:"NASM推荐动机性访谈（Motivational Interviewing），核心是开放式问题、积极倾听、反思性回应，帮助客户发现内在动机。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「循证实践」（Evidence-based practice）的三个核心要素是？",
+   opts:["客户目标、训练器械、教练经验","科学研究、临床经验、客户价值观","解剖学、生理学、生物力学","评估、计划、实施"],
+   ans:1, exp:"循证实践三要素：①最佳可用科学研究证据；②教练的临床专业经验；③客户的个人价值观与偏好。三者结合才能制定最优训练方案。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"客户处于「准备阶段」（Preparation）时，最适合的教练策略是？",
+   opts:["提供运动重要性信息激发意识","帮助客户制定具体可行的行动计划","重点关注维持长期习惯的策略","评估客户是否真的准备好"],
+   ans:1, exp:"准备阶段（计划1个月内开始）：客户已有改变意愿，教练应协助制定具体SMART目标，提供结构化支持，帮助从意图转化为行动。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「SMART目标」设定中，「M」代表什么？",
+   opts:["有意义的（Meaningful）","可测量的（Measurable）","可激励的（Motivational）","多维度的（Multi-dimensional）"],
+   ans:1, exp:"SMART目标：S=Specific（具体）、M=Measurable（可测量）、A=Attainable（可实现）、R=Relevant（相关）、T=Time-bound（有时限）。可测量性确保客户能追踪进度。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「外在动机」（Extrinsic Motivation）的例子是？",
+   opts:["因为喜欢运动带来的愉悦感而锻炼","为了赢得比赛奖金而训练","因为运动让自己感觉更好而坚持","为了个人成长和自我挑战而运动"],
+   ans:1, exp:"外在动机来自外部奖励或压力（奖金、他人认可、避免惩罚）。内在动机来自内部（乐趣、满足感、个人成长）。研究表明内在动机对长期行为维持更有效。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"当客户在「维持阶段」（Maintenance）面临复发风险时，教练应？",
+   opts:["重新从前沉思阶段开始整个流程","提供复发预防策略，强化应对技巧","减少与客户的沟通频率","更换全新的训练计划刺激兴趣"],
+   ans:1, exp:"维持阶段（规律运动超6个月）的主要挑战是防止复发。教练应帮助客户识别高风险情境，制定应对策略（如遇节假日或出差的备选计划），强化长期习惯。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「社会支持」（Social Support）在行为改变中的作用是？",
+   opts:["与个人运动动机无关","是行为改变最重要的单一因素","增加客户坚持运动的可能性","只对初学者有效，对有经验者无效"],
+   ans:2, exp:"社会支持（来自家人、朋友、教练、训练伙伴）显著提高运动依从性。研究表明有训练伙伴或教练支持的人更可能长期坚持运动计划。"},
+
+  // ══ Ch3-5 解剖生理 ══
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「旋转肌袖」（Rotator Cuff）由哪四块肌肉组成？",
+   opts:["三角肌、胸大肌、背阔肌、冈上肌","冈上肌、冈下肌、小圆肌、肩胛下肌","前锯肌、菱形肌、斜方肌、肩胛下肌","肱二头肌、肱三头肌、冈上肌、冈下肌"],
+   ans:1, exp:"旋转肌袖记忆口诀 SITS：冈上肌（Supraspinatus）、冈下肌（Infraspinatus）、小圆肌（Teres Minor）、肩胛下肌（Subscapularis）。这四块肌肉稳定肩关节。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"心输出量（Cardiac Output）的计算公式是？",
+   opts:["心率 × 体重","心率 × 每搏输出量","收缩压 - 舒张压","最大摄氧量 ÷ 体重"],
+   ans:1, exp:"心输出量（CO）= 心率（HR）× 每搏输出量（SV）。正常静息心输出量约5L/min，运动时可增至20-25L/min。是评估心肺功能的核心公式。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「慢肌纤维」（Type I）的主要特征是？",
+   opts:["爆发力强、容易疲劳、无氧代谢为主","耐力好、不易疲劳、有氧代谢为主","体积大、力量强、适合重量训练","收缩速度快、适合冲刺跳跃"],
+   ans:1, exp:"Type I（慢肌纤维）：线粒体密度高、毛细血管丰富、有氧氧化供能、耐疲劳性强，适合长时间低强度活动。Type II（快肌纤维）爆发力强但容易疲劳。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"膝关节在矢状面（Sagittal Plane）的主要运动是？",
+   opts:["内翻和外翻","屈曲和伸展","内旋和外旋","内收和外展"],
+   ans:1, exp:"矢状面（前后分割身体）上的运动是屈曲和伸展。额状面：内收/外展、内翻/外翻。水平面：旋转（内旋/外旋）。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「肌梭」（Muscle Spindle）的功能是？",
+   opts:["感知肌腱张力，防止过度收缩","感知肌肉长度变化，引发牵张反射","储存肌肉收缩所需ATP","调节肌肉收缩节律"],
+   ans:1, exp:"肌梭感知肌肉长度和变化速度，当肌肉被快速拉伸时触发牵张反射（肌肉收缩）。高尔基腱器（GTO）才是感知张力、引发抑制的感受器。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「高尔基腱器」（GTO）被激活后产生什么效果？",
+   opts:["使肌肉收缩增强","使肌肉放松（自生抑制）","加速神经冲动传导","提高关节活动范围限制"],
+   ans:1, exp:"GTO感知肌腱过度张力时激活，通过「自生抑制」使肌肉放松，防止肌肉或肌腱撕裂。这是泡沫轴放松和静态拉伸效果的生理基础。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"正常成年人静息心率范围是？",
+   opts:["40-50次/分钟","50-60次/分钟","60-100次/分钟","100-120次/分钟"],
+   ans:2, exp:"正常静息心率60-100次/分钟。运动员可低至40-50次（运动性心动徐缓）。高于100次为心动过速，低于60次为心动徐缓。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"正常血压标准值（收缩压/舒张压）是？",
+   opts:["< 130/< 85 mmHg","< 120/< 80 mmHg","< 140/< 90 mmHg","< 110/< 70 mmHg"],
+   ans:1, exp:"AHA 2017年指南：正常血压 < 120/80 mmHg；120-129/<80为偏高；≥130/80为高血压一期；≥140/90为高血压二期。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「拮抗肌」（Antagonist）的定义是？",
+   opts:["与主动肌产生相同动作的肌肉","与主动肌产生相反动作的肌肉","稳定关节但不产生主要动作","辅助主动肌完成动作的肌肉"],
+   ans:1, exp:"拮抗肌与主动肌产生相反动作。例如肘关节屈曲时，肱二头肌是主动肌，肱三头肌是拮抗肌。拮抗肌通过离心收缩控制动作速度。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「局部稳定肌」与「整体运动肌」的主要区别是？",
+   opts:["局部稳定肌体积更大，力量更强","局部稳定肌深层稳定关节；整体运动肌浅层产生大范围动作","局部稳定肌只在上肢工作","两者功能完全相同"],
+   ans:1, exp:"局部稳定肌（如多裂肌、腹横肌）深层，持续低水平激活维持关节稳定，是核心稳定基础。整体运动肌（如腹直肌）产生大范围动作和力量输出。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「神经肌肉效率」描述的是？",
+   opts:["肌肉产生最大力量的绝对能力","神经系统征召和协调肌肉运动单元的能力","肌肉在有氧条件下持续工作的能力","关节在全范围内活动的灵活性"],
+   ans:1, exp:"神经肌肉效率是神经系统有效征召运动单元、协调主动肌/拮抗肌/稳定肌协同工作的能力。训练初期力量增加主要来自神经适应（非肌肥大）。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「腓肠肌」（Gastrocnemius）的主要功能是？",
+   opts:["髋关节外展","踝关节跖屈和膝关节屈曲","踝关节背屈","膝关节伸展"],
+   ans:1, exp:"腓肠肌跨越踝关节和膝关节（双关节肌），主要功能是踝关节跖屈（提踵）和辅助膝关节屈曲。比目鱼肌只跨越踝关节，只做跖屈。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"人体「矢状轴」（Sagittal Axis）允许身体做哪种运动？",
+   opts:["屈曲和伸展","内收和外展","旋转","侧弯"],
+   ans:1, exp:"额状面上的运动（内收/外展、侧弯）围绕矢状轴发生。矢状面上的运动（屈曲/伸展）围绕额状轴发生。水平面上的运动（旋转）围绕垂直轴发生。"},
+
+  // ══ Ch6-7 运动科学/营养 ══
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「代谢当量」（MET）的定义是？",
+   opts:["运动时消耗的总卡路里","运动时代谢率相对静息代谢率的倍数","一小时有氧运动消耗的氧气量","最大摄氧量的百分比"],
+   ans:1, exp:"MET = 运动时耗氧量 ÷ 静息时耗氧量（3.5ml/kg/min）。静息=1 MET，轻度活动2-3 METs，中等强度3-6 METs，剧烈>6 METs。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「无氧糖酵解」能量系统的特点是？",
+   opts:["产能慢，持续时间长，以脂肪为主","产能快，持续30秒至2分钟，以葡萄糖为燃料并产生乳酸","产能最快，持续约10秒，以磷酸肌酸为燃料","需要氧气，产能效率最高"],
+   ans:1, exp:"三大能量系统：①磷酸原（ATP-PCr）：0-10秒，最快，无氧；②无氧糖酵解：10秒-2分钟，快速，产生乳酸；③有氧：2分钟以上，持久高效。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"EPOC（运动后过量氧耗）指的是？",
+   opts:["运动中的最大摄氧量","运动结束后恢复阶段额外消耗的氧气","运动前热身阶段的氧气消耗","有氧与无氧运动的氧气差值"],
+   ans:1, exp:"EPOC是运动后身体恢复阶段消耗超过静息水平的氧气量。高强度训练（HIIT）产生更大EPOC效应，意味着运动后持续燃烧更多热量。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"运动人群每日蛋白质推荐摄入量是？",
+   opts:["0.4-0.5 g/kg体重","0.8 g/kg体重（RDA最低值）","1.4-2.0 g/kg体重","3.0-4.0 g/kg体重"],
+   ans:2, exp:"ACSM和NASM建议活跃运动人群摄入1.4-2.0 g/kg体重蛋白质。0.8 g/kg是普通成年人RDA最低值，对运动人群不足；3-4 g/kg超出所需无额外益处。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"BMI（身体质量指数）的计算公式是？",
+   opts:["体重(kg) ÷ 身高(cm)","体重(kg) ÷ 身高(m)²","体重(lb) × 703 ÷ 身高(in)²","体脂量(kg) ÷ 总体重(kg)"],
+   ans:1, exp:"BMI = 体重(kg) ÷ 身高(m)²。分类：<18.5过轻；18.5-24.9正常；25-29.9超重；≥30肥胖。局限性：无法区分肌肉和脂肪，不适用于运动员。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「开链动作」与「闭链动作」的关键区别是？",
+   opts:["开链：末端固定；闭链：末端自由","开链：末端自由移动；闭链：末端固定在稳定表面","开链适合初学者；闭链适合高级","开链针对上肢；闭链针对下肢"],
+   ans:1, exp:"开链（OKC）：远端自由移动，如腿弯举、弯举。闭链（CKC）：远端固定，如深蹲、俯卧撑。CKC涉及多关节、多肌肉协同，功能性更强。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「力矩」（Torque）在生物力学中的定义是？",
+   opts:["肌肉收缩产生的绝对力量","使物体产生旋转的力（力 × 力臂长度）","重力对关节施加的压力","肌肉收缩速度与力量的乘积"],
+   ans:1, exp:"力矩（Torque）= 力 × 力臂长度。关节力矩决定完成动作需要的肌肉力量。力臂越长，产生相同力矩所需力越小，这是杠杆原理在人体的应用。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EBF1FC",
+   q:"「过度训练综合征」的常见症状不包括？",
+   opts:["持续疲劳和运动表现下降","静息心率升高","心情低落和失眠","骨骼肌肥大加速增长"],
+   ans:3, exp:"过度训练症状：持续疲劳、运动表现下降、静息心率升高、免疫力下降、情绪变化、睡眠质量差。肌肥大加速不是症状——过度训练反而抑制肌肉生长。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「三大宏量营养素」每克提供的热量分别是？",
+   opts:["蛋白质4kcal、碳水4kcal、脂肪9kcal","蛋白质4kcal、碳水4kcal、脂肪7kcal","蛋白质5kcal、碳水4kcal、脂肪9kcal","三者都是4kcal/克"],
+   ans:0, exp:"三大宏量营养素热量：蛋白质=4 kcal/g，碳水化合物=4 kcal/g，脂肪=9 kcal/g。酒精=7 kcal/g（虽不是营养素）。这是营养计算的基础数据。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「乳酸阈值」（Lactate Threshold）指的是？",
+   opts:["肌肉开始产生乳酸的绝对点","血乳酸积累速度超过清除速度的运动强度点","运动结束后乳酸完全消除的时间","最大摄氧量时对应的心率"],
+   ans:1, exp:"乳酸阈值是血乳酸积累速度开始超过清除速度的运动强度点，通常在最大心率的50-80%。低于阈值可长时间维持；超过则迅速疲劳。训练可提高乳酸阈值。"},
+
+  // ══ Ch8-10 运动心理/营养补充 ══
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「内在反馈」（Intrinsic Feedback）的例子是？",
+   opts:["教练告诉客户深蹲姿势需要改进","客户自己感受到动作中膝关节的位置","视频回放显示动作偏差","镜子中看到自己的姿势"],
+   ans:1, exp:"内在反馈来自客户自身的感觉系统（本体感觉、视觉、听觉），如感受到膝盖位置、肌肉张力。外在反馈来自外部源（教练指导、视频、镜子）。"},
+
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「增强反馈」（Augmented Feedback）在技能学习中最有效的给予时机是？",
+   opts:["动作开始之前","动作进行过程中（实时）","动作完成后短暂延迟给予","每次训练结束时统一给予"],
+   ans:2, exp:"研究表明增强反馈在动作完成后短暂延迟给予（而非实时）对技能学习更有效。过于频繁的实时反馈会导致客户依赖，减少自主处理感觉信息的机会。"},
+
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「创伤性脑损伤」（TBI）客户训练时，教练需特别注意？",
+   opts:["增加训练强度以促进康复","在医疗团队允许范围内提供运动支持","自行设计认知康复训练方案","完全避免任何形式的有氧运动"],
+   ans:1, exp:"TBI客户需在医疗专业团队（医生、物理治疗师）的指导和许可范围内进行运动。CPT应与医疗团队沟通，在批准的范围内提供支持性运动方案，不能超出执业范围。"},
+
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「肌酸」（Creatine）补充最有科学依据的效果是？",
+   opts:["提高有氧耐力和最大摄氧量","增加短时高强度运动的力量和爆发力输出","减少体脂百分比","加速伤后肌肉修复"],
+   ans:1, exp:"肌酸是研究最充分的运动补剂之一，最强证据支持其在短时高强度运动（<30秒）中提高磷酸肌酸再合成，从而增加力量和爆发力输出。对耐力运动效果有限。"},
+
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「运动前咖啡因」摄入对运动表现的主要影响是？",
+   opts:["直接增加肌肉力量输出","阻断腺苷受体，减少疲劳感并提高专注力","增加运动中脂肪氧化率","加速运动后恢复"],
+   ans:1, exp:"咖啡因通过阻断腺苷（促进睡意的物质）受体，减少主观疲劳感，提高警觉性和专注力。研究支持其对耐力运动、间歇运动和力量表现均有适度改善作用。"},
+
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「运动中水分补充」的一般建议是？",
+   opts:["只在感到口渴时才喝水","每15-20分钟补充150-350ml液体","每小时至少喝1升水","运动中避免饮水以提高耐力"],
+   ans:1, exp:"NASM和ACSM建议运动中每15-20分钟补充约150-350ml液体，不要等到感到口渴才喝（口渴已说明轻度脱水）。运动超过60分钟应考虑含电解质的运动饮料。"},
+
+  {ch:"Ch8-10 运动心理/营养", color:"#E8A23D", bg:"#FEF3DC",
+   q:"「运动后营养摄入时机」对肌肉恢复最重要的窗口期是？",
+   opts:["运动后立即至30分钟内（代谢窗口）","运动后3-4小时","运动后次日早餐","运动前24小时"],
+   ans:0, exp:"运动后30分钟内（代谢窗口）摄入蛋白质（20-40g）和碳水化合物，可最大化肌糖原补充和肌肉蛋白质合成。此时肌肉对营养摄取最敏感，有助于加速恢复。"},
+
+  // ══ Ch11-12 姿势评估/OHSA ══
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA中双脚过度外旋（Turn Out），最可能过度激活的肌肉是？",
+   opts:["胫骨前肌","腓肠肌/比目鱼肌","股四头肌","臀大肌"],
+   ans:1, exp:"脚外旋=腓肠肌/比目鱼肌（小腿后侧）过紧，及/或臀部深层外旋肌群过紧。需拉伸这些肌肉，同时激活胫骨前肌等内旋肌群。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA观察到「膝关节内扣」（Knee Valgus），应重点激活哪块肌肉？",
+   opts:["股二头肌","臀中肌","大收肌","腘绳肌"],
+   ans:1, exp:"膝内扣纠正逻辑：拉伸内收肌群、股二头肌短头、腓肠肌；激活臀中肌、臀大肌、胫骨前肌。臀中肌无力是膝内扣的核心原因，负责髋外展和外旋。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"「上交叉综合征」中处于「过度激活/紧张」状态的肌肉是？",
+   opts:["深层颈屈肌和菱形肌","胸大肌和上斜方肌/肩胛提肌","前锯肌和中下斜方肌","冈下肌和小圆肌"],
+   ans:1, exp:"上交叉综合征（Janda）：紧张：胸大/小肌 + 上斜方肌/肩胛提肌；无力：深层颈屈肌 + 中下斜方肌/菱形肌/前锯肌。表现为头前倾、圆肩驼背。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"「下交叉综合征」的典型姿势表现是？",
+   opts:["骨盆后倾和腰椎变平","骨盆前倾和腰椎过度前凸","脊柱侧弯和肋骨外翻","胸椎后凸增加和肩胛骨翼状突出"],
+   ans:1, exp:"下交叉综合征：紧张：髂腰肌/股直肌 + 竖脊肌；无力：臀大肌 + 腹肌群。结果：骨盆前倾 + 腰椎过度前凸（Hyperlordosis）。久坐人群最常见。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA中「手臂向前倒」（Arms Fall Forward）最可能表明哪块肌肉过紧？",
+   opts:["肱三头肌","背阔肌","三角肌后束","菱形肌"],
+   ans:1, exp:"手臂前倒（肩胛骨无法充分上旋）通常表示背阔肌和胸小肌过紧，限制肩关节上举灵活性。纠正：泡沫轴+拉伸背阔肌/胸小肌，激活中下斜方肌和前锯肌。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"侧面静态姿势评估，理想「重力线」应通过哪些标志？",
+   opts:["耳垂→肩峰→大转子→膝关节前方→外踝前方","耳垂→C7→胸椎→腰椎→骶骨","鼻尖→下巴→胸骨→肚脐→耻骨联合","头顶→肩峰→肘关节→腕关节"],
+   ans:0, exp:"理想侧面重力线：外耳孔→肩峰→大转子（髋关节中心）→膝关节略前方→外踝略前方。偏离即为姿势偏差，是静态评估的核心参考。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"以下哪项不属于NASM标准初始客户评估？",
+   opts:["健康史和风险分层","静态姿势评估","功能性动作评估（OHSA/SLSA）","最大力量测试（1RM）"],
+   ans:3, exp:"NASM初始评估：主观（健康史、PAR-Q）+ 客观（静态姿势、心肺功能、体成分、功能性动作评估）。1RM测试不是标准初始评估项目，对初学者有安全风险。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"「单腿深蹲评估」（SLSA）相较OHSA的主要优势是？",
+   opts:["更容易操作，适合所有年龄","更好暴露单侧功能不对称和动态稳定性问题","可同时评估上下肢协调性","不需要专业场地"],
+   ans:1, exp:"SLSA（单腿深蹲）要求更高平衡和单侧稳定性，可有效揭示双侧不对称问题（如右侧膝内扣但左侧正常），更好评估髋关节和踝关节动态控制。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA中观察到「低背弓起」（Low Back Arch），表明哪组肌肉过紧？",
+   opts:["腹横肌和多裂肌","髂腰肌和竖脊肌","臀大肌和腘绳肌","腹直肌和髂胫束"],
+   ans:1, exp:"低背弓起（腰椎过度前凸）=髂腰肌（髋屈肌）和竖脊肌过紧，同时臀大肌和腹肌群受到抑制（无力）。纠正：拉伸髂腰肌/竖脊肌，激活臀大肌/腹肌群。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"「推拉评估」（Pushing/Pulling Assessment）中，向心弯举时肩膀上耸（Shoulder Elevation）表明哪块肌肉过度激活？",
+   opts:["肱二头肌","上斜方肌","前锯肌","三角肌前束"],
+   ans:1, exp:"弯举时肩膀上耸=上斜方肌过度代偿，通常是因为深层颈屈肌无力或菱形肌/中下斜方肌抑制。应拉伸上斜方肌，激活深层颈屈肌和中下斜方肌。"},
+
+  // ══ Ch13 灵活性训练 ══
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「动态拉伸」（Dynamic Stretching）最适合在训练的哪个阶段使用？",
+   opts:["训练后冷身阶段","训练前热身阶段","训练中间休息时","睡前放松阶段"],
+   ans:1, exp:"动态拉伸（如腿摆、髋环绕）通过主动运动提高关节活动度，激活神经肌肉系统，适合训练前热身。研究显示训练前长时间静态拉伸可能短暂降低力量输出，动态拉伸不会有此问题。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「神经肌肉拉伸」（Neuromuscular Stretching/PNF）中「收缩-放松」技术的原理是？",
+   opts:["通过快速弹震动作刺激肌梭反射","目标肌肉等长收缩后放松，利用自生抑制增加活动度","主动收缩拮抗肌使目标肌肉放松","持续静态牵张直到肌肉适应"],
+   ans:1, exp:"PNF收缩-放松（Contract-Relax）：目标肌肉先进行6-10秒等长收缩（激活GTO），然后放松，利用自生抑制使肌肉更容易被拉伸，可显著增加关节活动范围。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「静态拉伸」推荐保持时间是？",
+   opts:["5-10秒","30秒以上（通常30-60秒）","2-3分钟","10-15秒"],
+   ans:1, exp:"NASM推荐静态拉伸每个姿势保持30秒以上（通常30-60秒），重复1-3次。持续牵张触发GTO抑制反射使肌肉放松延长。在纠正性训练的「延长」步骤中，SMR之后进行效果更佳。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「弹震拉伸」（Ballistic Stretching）为何在一般健身人群中不推荐？",
+   opts:["效果太差，不值得训练时间","可能触发牵张反射导致肌肉收缩，增加拉伤风险","只适合年轻人使用","需要专业设备才能完成"],
+   ans:1, exp:"弹震拉伸通过快速弹跳动作超过正常活动范围，可能激活肌梭引发保护性牵张反射（肌肉收缩），反而拮抗拉伸目的，并增加肌肉拉伤和关节损伤风险。不推荐用于一般健身人群。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「交互抑制」（Reciprocal Inhibition）原理在主动拉伸中的应用是？",
+   opts:["同时收缩主动肌和拮抗肌","收缩目标肌肉的拮抗肌，使目标肌肉反射性放松","拉伸肌肉的同时施加外力","先拉伸后立即进行力量训练"],
+   ans:1, exp:"交互抑制：主动肌收缩时，神经系统自动抑制拮抗肌（使其放松）。主动拉伸中利用此原理——收缩拮抗肌使目标肌肉放松，例如主动收缩股四头肌来拉伸腘绳肌。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「关节活动度」（ROM，Range of Motion）受限最常见的原因是？",
+   opts:["肌肉力量不足","肌肉紧张/缩短、关节囊限制、筋膜粘连","骨骼结构问题","年龄增长导致的不可逆变化"],
+   ans:1, exp:"ROM受限最常见原因：肌肉紧张/缩短（最常见）、筋膜粘连（触发点）、关节囊紧张。这些大多可通过SMR、拉伸和正确训练改善。骨骼结构限制相对少见。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"以下哪种情况下，应避免或谨慎进行拉伸训练？",
+   opts:["肌肉轻度酸痛（DOMS）","急性关节或肌肉损伤","长时间保持同一姿势后","训练结束后的冷身阶段"],
+   ans:1, exp:"急性损伤（骨折未愈合、急性炎症、新鲜韧带撕裂）时应避免拉伸。DOMS期间轻柔拉伸通常是安全的甚至有益的。久坐后和训练后拉伸均为推荐做法。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"训练前进行「长时间静态拉伸」（>60秒）可能导致？",
+   opts:["显著提高运动表现","短暂降低最大力量和爆发力输出","增加心肺功能效率","减少运动中受伤风险"],
+   ans:1, exp:"研究表明训练前进行长时间静态拉伸（>60秒）可能短暂降低最大力量（约5-8%）和爆发力输出。建议训练前用动态拉伸热身，将静态拉伸安排在训练后冷身阶段。"},
+
+  // ══ Ch14-15 OPT模型 ══
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"OPT第一阶段「稳定耐力」的训练参数是？",
+   opts:["6-12次，休息45-90秒，强度75-85% 1RM","12-20次，休息0-90秒，强度50-70% 1RM","1-5次，休息3-5分钟，强度85-100% 1RM","8-12次，休息60-120秒，强度70-80% 1RM"],
+   ans:1, exp:"OPT Phase 1（稳定耐力）：重复12-20次，组数1-3，休息0-90秒，强度50-70% 1RM，节奏慢（4-2-1）。目标：建立关节稳定性、改善姿势、发展本体感觉。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"OPT模型中「超级组」训练形式通常出现在哪个阶段？",
+   opts:["第一阶段：稳定耐力","第二阶段：力量耐力","第三阶段：肌肉发展","第五阶段：爆发力"],
+   ans:1, exp:"Phase 2（力量耐力）特征是超级组：先做传统力量动作，紧接着做相同肌群的稳定性动作（如腿举后立刻做单腿平衡深蹲）。同时发展力量和稳定性。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"OPT第五阶段「爆发力」训练的核心目标是？",
+   opts:["最大化肌肉体积","提高运动单元征召数量","增强力量与速度整合（RFD）","建立关节稳定性和本体感觉"],
+   ans:2, exp:"Phase 5（爆发力）目标：提高力量发展速率（RFD），即以最快速度产生最大力量。训练形式：组合训练（传统力量+爆发力动作，如深蹲+跳蹲）。适合运动员。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"OPT第三阶段「肌肉发展」的训练特征是？",
+   opts:["单关节动作为主，高重量低次数","多组数（3-5组），中等次数（6-12次），较短休息（60-90秒）","超级组形式，稳定性配合力量","低强度高次数（15-25次），持续张力"],
+   ans:1, exp:"Phase 3（肌肥大）：重复6-12次，组数3-5，休息60-90秒，强度75-85% 1RM。短休息保持代谢压力，是与最大力量阶段（休息3-5分钟）的关键区别。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"OPT第四阶段「最大力量」的组间休息时间是？",
+   opts:["0-60秒","60-90秒","3-5分钟","90-120秒"],
+   ans:2, exp:"Phase 4（最大力量）：重复1-5次，强度85-100% 1RM，组间休息3-5分钟。充足休息让磷酸肌酸系统完全恢复，保证下一组能维持最大力量输出。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"初级客户应从OPT哪个阶段开始？",
+   opts:["Phase 2：力量耐力（根据目标决定）","Phase 1：稳定耐力（所有初学者的起点）","Phase 3：肌肉发展（如果目标是增肌）","Phase 4：最大力量（建立基础力量）"],
+   ans:1, exp:"所有新客户无论目标都应从Phase 1（稳定耐力）开始。首先建立神经肌肉控制、关节稳定性和正确动作模式，避免在不稳定基础上进行高强度训练导致受伤。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"「周期化」（Periodization）的主要目的是？",
+   opts:["保持整个训练周期相同强度","系统性改变训练刺激以避免平台期，促持续适应","让客户在不同阶段练习不同运动","根据季节变化调整训练内容"],
+   ans:1, exp:"周期化通过有计划地改变训练量、强度和动作，防止身体对刺激产生适应（平台期），在不同阶段建立不同素质（稳定性→力量→爆发力），实现长期持续进步。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"「急性训练变量」（Acute Variables）不包括？",
+   opts:["组数（Sets）","重复次数（Reps）","每周训练天数（频率）","动作选择"],
+   ans:2, exp:"急性变量是设计训练课的具体参数：组数、重复次数、训练强度、节奏、休息时间、动作选择、训练量。训练频率（每周几天）是宏观计划参数，不属于急性变量。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"以下哪种客户最适合直接从OPT Phase 2开始？",
+   opts:["从未系统训练的办公室白领","有2年以上规律训练、评估无明显代偿的客户","运动损伤康复期患者","老年人或有慢性疾病的人群"],
+   ans:1, exp:"有足够训练基础（≥1年）且初始评估显示姿势良好、无明显代偿的客户，可跳过或缩短Phase 1，从Phase 2开始。无基础、特殊人群建议从Phase 1开始。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"在OPT训练课设计中，「训练量」（Volume）的计算方式是？",
+   opts:["组数 × 重复次数","组数 × 重复次数 × 负重","训练时间 × 强度","每周训练次数 × 每次时长"],
+   ans:1, exp:"训练量 = 组数 × 重复次数 × 负重（kg/lb）。这是衡量训练总工作量的标准公式。当需要渐进超负荷时，可以通过增加任何一个变量来增加总训练量。"},
+
+  // ══ Ch16-18 纠正性训练/心肺 ══
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"NASM纠正性训练四步骤（CEx策略）的正确顺序是？",
+   opts:["评估→激活→拉伸→整合","抑制→延长→激活→整合","热身→拉伸→力量→冷身","筛查→评估→训练→随访"],
+   ans:1, exp:"NASM纠正性训练四步骤（ILAI）：①Inhibit（抑制）：泡沫轴放松过紧肌肉；②Lengthen（延长）：静态/主动拉伸；③Activate（激活）：强化被抑制肌肉；④Integrate（整合）：功能性动作整合。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"泡沫轴（SMR）的正确操作方式是？",
+   opts:["快速滚动整块肌肉，每侧10-15秒","找到压痛点后，持续施压30-90秒","只在肌腱和韧带处滚动","训练前不建议使用"],
+   ans:1, exp:"SMR正确操作：缓慢滚动找到压痛/紧绷点（触发点），在该点持续施压30-90秒，直到感觉明显放松（约降低75%不适感）。持续压力激活GTO引发「自生抑制」使肌肉放松。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「目标心率」Karvonen公式是？",
+   opts:["最大心率（MHR）× 运动强度%","（MHR - 静息心率）× 强度% + 静息心率","220 - 年龄 × 强度%","最大摄氧量 × 0.7"],
+   ans:1, exp:"Karvonen公式（心率储备法）：THR = （HRmax - HRrest）× 强度% + HRrest。例：30岁，静息心率65，70%强度：MHR=190，THR=（190-65）×0.7+65≈152次/分。比直接用MHR×%更准确。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"提高VO2max（最大摄氧量）最有效的训练方式是？",
+   opts:["长时间低强度稳态有氧（慢跑60分钟）","中等强度匀速有氧（30-45分钟）","高强度间歇训练（HIIT，接近VO2max强度）","低强度步行（每天30分钟）"],
+   ans:2, exp:"提高VO2max最有效：在接近最大摄氧量强度（85-95% MHR）下训练，即高强度间歇（HIIT）。低强度有氧对VO2max提升有限。HIIT还能产生更大EPOC效应。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「SAQ」训练（速度、敏捷、反应）的主要目的是？",
+   opts:["增加肌肉横截面积","提高神经肌肉系统对快速方向改变的反应和控制","建立基础有氧耐力","改善关节柔韧性"],
+   ans:1, exp:"SAQ训练目标：发展速度（直线移动）、敏捷性（改变方向）和反应速度（对刺激快速反应）。通过神经肌肉训练提高运动单元征召效率和肌肉协调性。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「主动拉伸」（AIS）与静态拉伸的主要区别是？",
+   opts:["主动拉伸需要外力辅助","主动拉伸通过收缩拮抗肌拉伸目标肌肉，每次保持1-2秒","主动拉伸只适合运动员","两者效果完全相同"],
+   ans:1, exp:"主动拉伸（AIS）：通过主动收缩拮抗肌（利用交互抑制），使目标肌肉放松被拉伸，每次保持1-2秒，重复多次。比静态拉伸更安全，不会触发牵张反射。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"NASM「Zone 1」心率训练区间对应的强度和目标是？",
+   opts:["最大心率85-100%，发展无氧能力","最大心率65-75%，发展基础有氧耐力","最大心率76-85%，提高乳酸阈值","最大心率50-65%，主动恢复"],
+   ans:1, exp:"Zone 1（65-75% MHR）：基础有氧耐力，能长时间维持，脂肪供能比例高；Zone 2（76-85%）：提高心肺功能和乳酸阈；Zone 3（86-95%）：高强度，发展VO2max。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「增强式训练」（Plyometrics）中「牵张-缩短周期」（SSC）的作用是？",
+   opts:["减少关节冲击力，保护膝关节","利用肌肉弹性储能，增加随后向心收缩的爆发力","降低肌肉激活需求，节省能量","延长动作持续时间以增加训练效果"],
+   ans:1, exp:"牵张-缩短周期（SSC）：肌肉先快速离心拉伸（储存弹性势能）→短暂等长阶段→快速向心收缩（释放储能）。这种机制使实际输出力量大于纯向心收缩，是跳跃和投掷运动的力量来源。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「稳态有氧」（Steady-State Cardio）与「间歇训练」（Interval Training）的主要区别是？",
+   opts:["稳态有氧时间更短，间歇训练时间更长","稳态有氧强度恒定；间歇训练交替高低强度","稳态有氧只适合减脂；间歇只适合增肌","两者消耗的总热量完全相同"],
+   ans:1, exp:"稳态有氧：全程保持恒定中等强度（如慢跑）；间歇训练：高强度运动与低强度恢复期交替进行。HIIT（高强度间歇）在相同时间内能产生更大训练效果和EPOC效应。"},
+
+  // ══ Ch19-20 阻力训练设计 ══
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「渐进性超负荷」（Progressive Overload）原则是指？",
+   opts:["每次训练都必须增加重量","系统性逐渐增加训练刺激，使身体持续产生适应","在不同肌群间交替训练","每周减少训练量防止过度训练"],
+   ans:1, exp:"渐进性超负荷：持续给肌肉和神经系统施加超过当前适应水平的刺激，才能产生持续进步。可通过增加重量、次数、组数、减少休息时间、改变节奏等实现。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"NASM推荐的训练课标准顺序是？",
+   opts:["有氧→力量→柔韧性→核心","热身→柔韧性→核心→平衡→爆发力→阻力→冷身","力量→有氧→热身→拉伸","核心→爆发力→有氧→阻力"],
+   ans:1, exp:"NASM训练课顺序：热身→柔韧性（纠正性）→核心→平衡→爆发力（增强式/SAQ）→阻力→冷身。此顺序确保神经激活由精细到粗放，符合运动生理学原则。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「离心收缩」（Eccentric Contraction）的正确描述是？",
+   opts:["肌肉缩短同时产生张力","肌肉在产生张力的同时被拉长（受控降低阶段）","肌肉长度不变，等长维持静态姿势","离心收缩不会造成肌肉损伤"],
+   ans:1, exp:"离心收缩：肌肉产生张力的同时被拉长，如深蹲下降阶段的股四头肌。离心收缩产生更大肌肉损伤（DOMS的主因），也是肌肥大刺激的重要来源。慢速离心训练对肌肉生长特别有效。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「RPE量表」（主观用力感觉）的原版Borg量表范围是？",
+   opts:["0-10分","6-20分","1-100分","0-100%"],
+   ans:1, exp:"原版Borg RPE量表：6-20分（大致对应心率60-200次/分）。现代常用改良版为0-10分，更直观。NASM中常用RPE评估训练强度，特别是1RM数据不可用时。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「上半身推」（Pressing）动作的主要主动肌是？",
+   opts:["背阔肌、菱形肌、肱二头肌","胸大肌、三角肌前束、肱三头肌","腘绳肌、臀大肌、竖脊肌","腹横肌、多裂肌、腹直肌"],
+   ans:1, exp:"上半身推动作（卧推、肩推、俯卧撑）主要主动肌：胸大肌（胸部）、三角肌前束（肩部）、肱三头肌（手臂）。这是设计拮抗肌训练（配合拉动作）的基础。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「复合动作」（Compound Movements）相较「孤立动作」（Isolation）的主要优势是？",
+   opts:["对单一肌肉的刺激更精准","同时训练多个关节和肌群，功能性更强，代谢消耗更高","更安全，受伤风险更低","更适合高级训练者，不适合初学者"],
+   ans:1, exp:"复合动作（深蹲、硬拉、卧推）涉及多关节多肌群协同工作，功能性强，代谢消耗高，激素响应更大（睾酮/生长激素分泌）。孤立动作针对特定肌肉，通常用于辅助训练或康复。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「训练节奏」（Tempo）标注4-2-1表示什么？",
+   opts:["4组，休息2分钟，1次重复","4秒离心→2秒等长→1秒向心","1秒向心→2秒等长→4秒离心","每组4次，每次2秒，休息1分钟"],
+   ans:1, exp:"训练节奏标注格式：离心（放下）-等长（顶/底端暂停）-向心（抬起）。4-2-1 = 4秒放下 → 2秒暂停 → 1秒抬起。慢速节奏（如Phase 1）增加时间张力，有助于稳定性和肌肉意识。"},
+
+  // ══ Ch21-22 体重管理/老年人 ══
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「代谢综合征」（Metabolic Syndrome）的诊断标准不包括？",
+   opts:["腹部肥胖（腰围男>102cm，女>88cm）","空腹血糖升高（≥100 mg/dL）","骨骼肌含量低于正常值","血压升高（≥130/85 mmHg）"],
+   ans:2, exp:"代谢综合征（满足3项及以上即可诊断）：①腹部肥胖；②高甘油三酯（≥150 mg/dL）；③低HDL胆固醇；④高血压（≥130/85）；⑤空腹血糖升高（≥100 mg/dL）。骨骼肌含量不在诊断标准内。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「热量缺口」（Caloric Deficit）减脂的基本原理是？",
+   opts:["只要减少碳水摄入即可减脂","摄入热量低于消耗热量，身体动用储存脂肪供能","运动消耗必须超过饮食摄入的50%","只有有氧运动才能创造有效热量缺口"],
+   ans:1, exp:"减脂基本原理：能量负平衡（摄入 < 消耗），身体需要消耗储存的糖原和脂肪来维持运转。每减少约7700 kcal（约3500 kcal/磅）理论上减少约1kg体脂。实际效果受个体代谢差异影响。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「肌少症」（Sarcopenia）是指？",
+   opts:["骨骼中钙质流失导致骨骼疏松","随年龄增长骨骼肌量和力量进行性下降","脂肪组织替代肌肉组织的病理过程","老年人心肺功能的自然衰退"],
+   ans:1, exp:"肌少症是与年龄相关的骨骼肌量、力量和功能的进行性下降，从30岁左右开始，每十年可减少3-8%肌肉量。阻力训练是预防和改善肌少症最有效的干预手段。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"针对老年客户（65岁以上）的训练，最需要优先考虑的目标是？",
+   opts:["最大化肌肉体积和力量增长","维持功能性动作能力、平衡和跌倒预防","提高竞技运动表现","专注高强度有氧训练提高心肺耐力"],
+   ans:1, exp:"老年人训练优先目标：维持功能性独立性（日常活动能力）、改善平衡和本体感觉以预防跌倒、维持骨密度、改善心肺功能。跌倒是老年人致残和死亡的主要原因之一。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「骨质疏松症」（Osteoporosis）客户进行阻力训练时，教练需要特别注意？",
+   opts:["完全避免负重运动以防骨折","优先选择适当负重和冲击力训练以刺激骨形成，同时避免脊柱大幅屈曲","只进行游泳等无冲击运动","增加训练频率以加速骨密度恢复"],
+   ans:1, exp:"骨质疏松客户：适度的负重运动（步行、轻度阻力训练）和冲击运动实际上有助于刺激骨形成。应避免脊柱大幅前屈动作（增加椎体骨折风险），如仰卧起坐、弯腰触脚趾。需医生许可后进行。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「内脏脂肪」（Visceral Fat）相比「皮下脂肪」的健康风险更高，主要原因是？",
+   opts:["内脏脂肪位置更深，更难通过运动消耗","内脏脂肪与代谢综合征、心脏病、糖尿病风险密切相关","内脏脂肪直接压迫器官导致疼痛","内脏脂肪比皮下脂肪更难减少"],
+   ans:1, exp:"内脏脂肪（腹腔器官周围）代谢活性更高，分泌促炎细胞因子，与胰岛素抵抗、代谢综合征、心血管疾病、2型糖尿病风险密切相关。腰围是评估内脏脂肪的简便指标。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「基础代谢率」（BMR）的主要影响因素不包括？",
+   opts:["去脂体重（肌肉量）","年龄和性别","每天的心情和情绪状态","甲状腺激素水平"],
+   ans:2, exp:"影响BMR的主要因素：去脂体重（肌肉越多BMR越高）、年龄（随年龄下降）、性别（男性通常高于女性）、激素水平（甲状腺激素）、体温。每天的情绪状态对BMR影响极小，不是主要因素。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"老年人进行平衡训练时，最适合从哪种难度开始？",
+   opts:["直接进行单腿站立训练","双脚站立稳定面，逐渐过渡到减小支撑面","在不稳定表面（BOSU球）进行训练","闭眼单腿站立训练"],
+   ans:1, exp:"NASM进阶原则：从稳定到不稳定，从双侧到单侧，从慢速到快速。老年人平衡训练应从双脚站立稳定面开始（如站立重心转移），逐渐减小支撑面（脚并拢→串联步→单腿），确保安全性。"},
+
+  // ══ Ch23-25 特殊人群 ══
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「2型糖尿病」客户运动时，教练需要特别注意？",
+   opts:["只允许进行低强度有氧运动","运动前后监测血糖，了解低血糖症状，随身携带快速糖分","禁止进行阻力训练以避免血糖波动","在胰岛素注射后立即开始高强度运动"],
+   ans:1, exp:"2型糖尿病客户运动注意事项：运动前后监测血糖；了解低血糖（头晕、出汗、颤抖）症状；随身携带快速糖分（糖果、果汁）；胰岛素注射后避免立即高强度运动（可能引起低血糖）。阻力训练实际上对血糖控制很有益。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「妊娠期」（怀孕期间）运动的禁忌症不包括？",
+   opts:["前置胎盘","多胎妊娠（双胞胎及以上）","轻度妊娠反应（晨吐）","严重贫血"],
+   ans:2, exp:"妊娠期运动禁忌症（需停止运动）：前置胎盘、多胎妊娠（早产风险）、严重贫血、持续阴道出血、宫颈机能不全等。轻度晨吐是常见妊娠反应，不是运动禁忌症，但运动时应注意避免加重恶心。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"针对「青少年」（13-17岁）的力量训练，NASM的建议是？",
+   opts:["青少年骨板未闭合，完全禁止任何形式的力量训练","适当的力量训练对青少年安全有益，需强调技术规范和渐进原则","青少年应专注有氧运动，不进行任何阻力训练","青少年可以直接进行成人水平的最大力量训练"],
+   ans:1, exp:"NASM立场：有监督、技术规范的力量训练对青少年安全有益，可提高骨密度、改善身体成分、增强自信心。关键点：强调动作技术（非最大重量）、渐进超负荷、避免单次最大重量测试（1RM）。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「高血压」（Hypertension）客户进行力量训练时，应避免？",
+   opts:["所有形式的阻力训练","Valsalva动作（屏气用力），应保持正常呼吸","动作重复次数超过12次","有氧运动前的热身活动"],
+   ans:1, exp:"高血压客户力量训练：应避免Valsalva动作（屏气）——这会导致胸内压剧增，大幅升高血压。应保持正常呼吸（用力时呼气）。适当强度的阻力训练实际上对长期血压控制有益，但需医生许可。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「冠心病」（CAD）客户开始运动计划前，最重要的步骤是？",
+   opts:["直接从低强度有氧运动开始","获得医生的书面许可和运动测试结果（如心电图压力测试）","优先进行高强度间歇训练改善心功能","完全避免运动，以免增加心脏负担"],
+   ans:1, exp:"冠心病客户必须在医生书面许可后才能开始运动，理想情况下应先进行心脏运动压力测试，确定安全心率范围。CPT应与心脏康复团队密切合作，在批准的强度范围内进行训练。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「产后」（Postpartum）客户恢复运动的一般建议是？",
+   opts:["分娩后立即恢复所有运动项目","自然分娩建议6周后、剖腹产建议8-12周后，经医生许可循序渐进","分娩后3个月内完全禁止任何运动","产后运动强度不应超过分娩前水平的50%"],
+   ans:1, exp:"产后运动建议：自然分娩通常6周产后检查后获得医生许可；剖腹产伤口愈合需要更长时间（8-12周）。应从骨盆底肌训练、腹式呼吸和低强度步行开始，逐渐进阶。避免高冲击和重负荷直到完全恢复。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「慢性阻塞性肺病」（COPD）客户进行有氧训练时，强度监控最好使用？",
+   opts:["最大心率百分比（%MHR）","改良版Borg RPE量表（0-10），结合呼吸困难评估","最大摄氧量百分比（%VO2max）","乳酸阈值监测"],
+   ans:1, exp:"COPD客户由于肺功能受限，心率反应可能不准确。改良版Borg RPE量表（0-10）结合呼吸困难量表（如Borg呼吸困难量表）更适合监控运动强度。目标通常是轻到中度呼吸困难（RPE 3-5分）。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「脑卒中」（Stroke）后客户进行运动康复时，教练的主要角色是？",
+   opts:["独立设计完整的神经康复方案","在医疗康复团队（物理/职业治疗师）许可和指导下，提供额外的运动支持","专注于改善患侧肢体最大力量","完全避免涉及患侧肢体的训练"],
+   ans:1, exp:"脑卒中后的运动康复需要医疗团队（神经科医生、物理治疗师、职业治疗师）主导。CPT在获得团队许可后，可在批准的范围内提供补充性运动支持（如健侧肢体维持、心肺训练），不能超出执业范围独立制定神经康复方案。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"以下哪种运动对「骨质疏松」预防和改善最有直接帮助？",
+   opts:["游泳（非负重运动）","负重有氧运动（步行、跑步）和阻力训练","骑固定自行车","拉伸和瑜伽"],
+   ans:1, exp:"骨密度提升需要机械应力刺激——负重运动（步行、跑步、跳绳）和阻力训练（力量训练）通过对骨骼施加压力，刺激成骨细胞活动，促进骨密度维持和提升。游泳和骑车为非负重运动，对骨密度改善效果有限。"},
+
+  // ══════════════════════════════════════════════════
+  // 第二版题目（全新100题，更多场景应用）
+  // ══════════════════════════════════════════════════
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"一位客户告诉你她最近被诊断为2型糖尿病，并问你她应该吃什么来控制血糖。作为CPT，你应该？",
+   opts:["提供详细的糖尿病饮食计划","告知这超出CPT执业范围，建议她咨询注册营养师或医生","拒绝与她讨论任何关于营养的话题","告诉她完全不需要改变饮食，只要运动就够了"],
+   ans:1, exp:"为特定疾病制定饮食治疗方案超出CPT执业范围，属于注册营养师（RD）和医生的职责。CPT应礼貌说明这一限制并推荐适当专业人士。可提供一般营养健康教育，但不能针对疾病开具饮食处方。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"客户说：「我知道我应该运动，但每次想到健身房就焦虑，总是找借口不去。」这位客户处于TTM的哪个阶段？",
+   opts:["前沉思阶段（Precontemplation）","沉思阶段（Contemplation）","准备阶段（Preparation）","行动阶段（Action）"],
+   ans:1, exp:"该客户已经意识到需要运动（「我知道我应该」），但尚未采取行动，属于沉思阶段。特征：认识到问题，有意向在6个月内改变，但存在矛盾心理和障碍。教练应帮助分析障碍，制定克服策略。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"以下哪种提问方式最能体现「动机性访谈」技术？",
+   opts:["「你为什么总是找借口不运动？」","「你觉得如果坚持运动3个月，你的生活会有什么变化？」","「你应该每周至少运动3次，你能做到吗？」","「上周你只来了2次，你知道这样不够吧？」"],
+   ans:1, exp:"动机性访谈核心是开放式问题，帮助客户探索内在动机。「你的生活会有什么变化」是前瞻性开放式问题，引导客户自己发现改变的价值。其他选项带有指责或评判色彩，会损害信任关系。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「专业责任保险」（Professional Liability Insurance）对CPT的重要性是？",
+   opts:["只有在大型健身房工作才需要","保护教练在客户因训练受伤提出诉讼时的财务风险","可以完全替代知情同意书的法律作用","证明教练具备专业资质的唯一方式"],
+   ans:1, exp:"专业责任保险保护CPT在客户提出与训练相关伤害索赔时的财务损失。无论在健身房还是独立执业，NASM强烈建议所有持证CPT购买此类保险。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"客户在训练中途突然说：「我感到胸闷和左臂疼痛。」你应该立即？",
+   opts:["让客户继续训练，观察症状是否加重","立即停止训练，让客户坐下休息，拨打急救电话","给客户喝水并做简单拉伸","询问客户是否有心脏病史再决定是否停止"],
+   ans:1, exp:"胸痛伴左臂疼痛是心脏病发作的经典症状，属于医疗紧急情况。CPT必须立即停止所有训练，让客户保持舒适体位，立即拨打急救电话（120），不能等待观察或继续训练。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"客户隐私保护原则要求CPT？",
+   opts:["公开分享客户成功案例（包括姓名）以吸引新客户","未经客户书面同意，不得向第三方透露客户的健康信息","只对其他健身从业者保密客户信息","仅在客户要求时才保护其隐私"],
+   ans:1, exp:"客户隐私保护是CPT职业道德核心。未经客户明确书面同意，不得向任何第三方透露客户的健康状况、训练记录或个人信息。在社交媒体分享客户案例也需获得书面授权。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"新客户PAR-Q显示她在过去12个月内有过心脏手术。CPT应该？",
+   opts:["直接开始低强度训练，手术已经过去了","要求客户提供医生书面运动许可后再开始训练","只进行拉伸，不做任何有氧或力量训练","告知客户不能为其提供训练服务"],
+   ans:1, exp:"PAR-Q中任何心脏相关「是」的回答都要求在开始运动计划前获得医生许可。这是保护客户安全和教练法律责任的重要步骤，不是拒绝服务，而是确保安全。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「跨理论模型」中「决策平衡」（Decisional Balance）是指？",
+   opts:["平衡有氧训练和力量训练的比例","客户权衡改变行为的利弊得失","教练评估客户体能水平的方法","制定训练计划时平衡各肌群的训练量"],
+   ans:1, exp:"决策平衡是TTM中的核心概念，指客户权衡改变行为的「利」（好处）与「弊」（障碍）。帮助客户分析决策平衡，可以强化改变动机，减少阻力。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「SMART目标」中「M」代表什么？",
+   opts:["有意义的（Meaningful）","可测量的（Measurable）","可激励的（Motivational）","多维度的（Multi-dimensional）"],
+   ans:1, exp:"SMART目标：S=Specific（具体）、M=Measurable（可测量）、A=Attainable（可实现）、R=Relevant（相关）、T=Time-bound（有时限）。可测量性确保客户能追踪进度。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「专业界限」（Professional Boundaries）在CPT-客户关系中是指？",
+   opts:["教练应该与客户建立深厚私人友谊","保持专业工作关系，避免双重关系，以客户最佳利益为先","教练与客户之间不应有任何私人交流","只在健身房内与客户交流"],
+   ans:1, exp:"专业界限是CPT职业伦理核心：保持专业服务关系，避免可能影响专业判断或损害客户利益的双重关系（恋人、商业合伙等）。维护清晰界限保护客户权益，也保护教练免于职业风险。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"「反思性倾听」（Reflective Listening）在动机性访谈中的作用是？",
+   opts:["教练重复客户的话显示在认真听","通过复述或重新表达客户的意思，帮助客户感到被理解，深化对自身情况的认识","只在客户说错话时纠正用","会让客户觉得教练没有新想法"],
+   ans:1, exp:"反思性倾听：教练用自己的话复述/重新表达客户所说内容，让客户感到被理解和接纳，同时帮助客户更清晰地认识自己的想法，进而促进内在反思和改变动机。"},
+
+  {ch:"Ch1-2 执业范围/行为改变", color:"#4A7FE8", bg:"#EBF1FC",
+   q:"CPT必须熟悉的「紧急程序」包括？",
+   opts:["只需要知道如何拨打急救电话","AED使用、CPR基础、紧急疏散程序和常见运动损伤的急救处理","只需要知道最近医院位置","急救处理不是CPT的责任"],
+   ans:1, exp:"NASM要求CPT具备基本急救能力：持有有效CPR/AED认证；了解所在设施的紧急应对程序；了解常见运动损伤处理原则；知道何时拨打急救电话。这是职业责任的基本要求。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「运动单元」（Motor Unit）是由什么组成的？",
+   opts:["一块肌肉和其对应的关节","一个运动神经元及其所支配的所有肌纤维","一组协同完成同一动作的肌肉群","大脑皮层中控制特定肌肉的神经细胞"],
+   ans:1, exp:"运动单元 = 一个α运动神经元 + 它所支配的所有肌纤维。神经元发出信号时，它支配的所有肌纤维同时收缩（全或无定律）。精细动作的运动单元小，大肌群的运动单元大。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"以下哪块肌肉是「双关节肌」（Biarticular Muscle）？",
+   opts:["比目鱼肌（Soleus）","腓肠肌（Gastrocnemius）","胫骨前肌（Tibialis Anterior）","臀大肌（Gluteus Maximus）"],
+   ans:1, exp:"腓肠肌是双关节肌，同时跨越踝关节（跖屈）和膝关节（屈曲）。比目鱼肌只跨越踝关节（单关节肌）。双关节肌的拉伸需要同时考虑两个关节位置，腓肠肌在膝伸直时拉伸效果更好。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「最大摄氧量」（VO2max）的定义是？",
+   opts:["运动时每分钟心脏泵出的最大血液量","个体在最大强度运动时每分钟每公斤体重消耗的最大氧气量","运动时血液中氧气的最大携带量","静息状态下每分钟消耗的氧气总量"],
+   ans:1, exp:"VO2max是衡量有氧能力的金标准，表示个体在最大强度运动时每分钟每公斤体重能消耗的最大氧气量（ml/kg/min）。普通成年人约35-45，耐力运动员可超过70。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「等长收缩」（Isometric Contraction）的特征是？",
+   opts:["肌肉缩短，关节产生运动","肌肉产生张力但长度不变，关节不产生运动","肌肉拉长同时产生张力","肌肉完全放松不产生任何张力"],
+   ans:1, exp:"三种收缩：①向心：肌肉缩短+关节运动；②等长：肌肉长度不变+产生张力+关节不动（如平板支撑）；③离心：肌肉拉长+产生张力（如深蹲下降）。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"脊柱「腰椎」（Lumbar Spine）共有几节？",
+   opts:["5节","7节","12节","4节"],
+   ans:0, exp:"脊柱分段：颈椎7节（C1-C7）、胸椎12节（T1-T12）、腰椎5节（L1-L5）、骶椎融合为骶骨、尾骨。腰椎承受最大负荷，是下背痛最常见的部位。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「本体感觉」（Proprioception）的定义是？",
+   opts:["视觉系统对空间位置的感知","身体感知自身位置、运动和平衡状态的能力","听觉系统对声音方向的定位","皮肤感受温度和疼痛的能力"],
+   ans:1, exp:"本体感觉是身体通过肌梭、GTO、关节感受器等感知自身位置、运动和平衡状态的能力，无需视觉辅助。OPT Phase 1的核心目标之一就是提高本体感觉，对预防运动损伤至关重要。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「前交叉韧带」（ACL）的主要功能是？",
+   opts:["防止膝关节过度内翻","防止胫骨相对股骨向前移位","连接股骨和腓骨","防止膝关节过度伸展"],
+   ans:1, exp:"ACL主要防止胫骨相对股骨向前移位，并提供旋转稳定性。通常发生在减速、急转、跳跃落地时损伤。强化臀肌和腘绳肌有助于减少ACL损伤风险。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"运动时「每搏输出量」（Stroke Volume）增加的主要原因是？",
+   opts:["心率加快导致心脏充盈时间缩短","静脉回流增加、心肌收缩力增强","血压升高抑制心脏过度工作","呼吸频率加快增加胸腔压力"],
+   ans:1, exp:"运动时每搏输出量增加：Frank-Starling机制（静脉回流增加→心室充盈量增加→收缩力增强）和交感神经激活增强心肌收缩力。训练有素运动员静息SV（100-120ml）远高于未训练者（70ml）。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「髂胫束」（IT Band）紧张最常见的代偿表现是？",
+   opts:["肩膀上耸","膝关节外旋或深蹲时膝关节偏移","踝关节背屈受限","脊柱侧弯"],
+   ans:1, exp:"髂胫束过紧会限制髋关节内收和膝关节内旋，导致深蹲时出现膝关节外旋或偏移。IT Band综合征常见于跑者，表现为膝关节外侧疼痛。泡沫轴放松是常用缓解方法。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「肩峰下撞击综合征」最常与以下哪种姿势问题相关？",
+   opts:["下交叉综合征","上交叉综合征（圆肩/肩胛骨前伸/上旋不足）","足弓塌陷","膝关节过伸"],
+   ans:1, exp:"肩峰下撞击与上交叉综合征密切相关：圆肩→肩胛骨前倾→肩峰下空间减小→肩袖组织撞击。纠正：改善胸椎灵活性、激活中下斜方肌，拉伸胸小肌。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"长期有氧训练后，心脏的适应性变化是？",
+   opts:["心脏变小以减少做功","左心室容积增大，每搏输出量增加，静息心率下降","心率增加以处理更大血流量","心脏肌肉变薄以提高效率"],
+   ans:1, exp:"长期有氧训练的心脏适应（「运动员心脏」）：左心室腔室扩大→充盈量增加；每搏输出量↑；静息心率下降（耐力运动员可低至40-50次/分）。与病理性心脏肥大不同。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「磷酸肌酸系统」（ATP-PCr）最适合为哪种运动提供能量？",
+   opts:["马拉松（约4小时）","400米跑（约50秒）","100米短跑（约10秒）","3000米跑（约10分钟）"],
+   ans:2, exp:"磷酸肌酸系统：提供即时能量，持续约10秒，强度最高（如100米冲刺、最大重量单次举重）。400米跑约50秒主要依赖无氧糖酵解。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「葡萄糖」在体内的储存形式是？",
+   opts:["脂肪酸（Fatty Acids）","糖原（Glycogen）","氨基酸（Amino Acids）","磷酸肌酸（Phosphocreatine）"],
+   ans:1, exp:"葡萄糖以糖原形式储存：肌糖原（约300-400g，只供该肌肉使用）和肝糖原（约80-100g，维持血糖水平）。运动耗尽糖原会导致「撞墙」现象。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「延迟性肌肉酸痛」（DOMS）通常在运动后多久出现？",
+   opts:["运动后立即（0-2小时）","运动后24-72小时","运动后1周","运动后30分钟内"],
+   ans:1, exp:"DOMS通常在运动后24-72小时出现，48小时达到峰值。主要由离心收缩引起的肌肉微损伤和炎症反应导致。是正常适应过程，轻度活动和拉伸有助于缓解。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「脱水」对运动表现的影响，体重水分损失达到多少时开始明显？",
+   opts:["1%","2%","5%","10%"],
+   ans:1, exp:"体重水分损失达2%时，有氧能力开始明显下降（约降低20%），认知功能也受影响。损失5%会导致热衰竭风险。说明在感到口渴前就应开始补水的重要性。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「三大宏量营养素」每克提供的热量分别是？",
+   opts:["蛋白质4kcal、碳水4kcal、脂肪9kcal","蛋白质4kcal、碳水4kcal、脂肪7kcal","蛋白质5kcal、碳水4kcal、脂肪9kcal","三者都是4kcal/克"],
+   ans:0, exp:"三大宏量营养素热量：蛋白质=4 kcal/g，碳水化合物=4 kcal/g，脂肪=9 kcal/g。酒精=7 kcal/g（非营养素）。这是营养计算的基础数据。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「必需氨基酸」（EAA）是指？",
+   opts:["身体可以自己合成的氨基酸","必须通过饮食摄入，身体无法自行合成的氨基酸","只存在于动物蛋白中的氨基酸","负责肌肉收缩的氨基酸"],
+   ans:1, exp:"人体共20种氨基酸：9种必需氨基酸（EAA）必须从饮食获得，11种非必需氨基酸可由身体合成。亮氨酸（Leucine）是激活肌肉蛋白质合成（mTOR通路）的关键EAA。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「食物热效应」（TEF）最高的宏量营养素是？",
+   opts:["脂肪（约2-3%）","碳水化合物（约5-10%）","蛋白质（约20-35%）","三者相同"],
+   ans:2, exp:"食物热效应：蛋白质TEF最高（20-35%）；碳水化合物5-10%；脂肪2-3%。高蛋白饮食在减脂中有额外优势——更高的TEF加上更强的饱腹感。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「运动与免疫」的关系，以下哪项正确？",
+   opts:["任何强度的运动都会提高免疫功能","中等强度规律运动增强免疫；过度训练会暂时抑制免疫","剧烈运动总是对免疫系统有害","运动对免疫系统没有任何影响"],
+   ans:1, exp:"「J型曲线」假说：中等强度规律运动→免疫功能↑；极高强度/过度训练→运动后「免疫开放窗口期」（1-3小时），感染风险暂时升高。这解释了为什么精英运动员高强度训练后更易患呼吸道感染。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「皮褶厚度测量」（Skinfold Measurement）评估体成分的原理是？",
+   opts:["直接测量内脏脂肪含量","通过测量皮下脂肪厚度，使用公式推算总体脂率","测量骨骼密度来推算肌肉量","通过电阻抗测量体内水分分布"],
+   ans:1, exp:"皮褶厚度法：用卡尺测量身体特定部位皮下脂肪厚度，代入公式推算体脂率。优点：成本低、便携；缺点：依赖技术者经验，测量误差约3-4%。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA中观察到「过度前倾」（Excessive Forward Lean），最可能表明哪块肌肉过紧？",
+   opts:["臀大肌","腓肠肌/比目鱼肌和髋屈肌群","股四头肌","腹横肌"],
+   ans:1, exp:"OHSA过度前倾=踝关节背屈受限（腓肠肌/比目鱼肌过紧）+髋屈肌过紧+竖脊肌过紧，同时前侧核心和臀大肌可能受到抑制。纠正：拉伸小腿/髋屈肌，激活胫骨前肌和臀大肌。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"「颈椎前移」（Forward Head Posture）对哪块肌肉影响最大？",
+   opts:["腹横肌和多裂肌","颈椎深层屈肌被抑制，胸锁乳突肌和枕下肌过紧","冈下肌和小圆肌被拉伸","斜方肌中部和菱形肌过度激活"],
+   ans:1, exp:"头前倾：颈椎深层屈肌（头长肌、颈长肌）受到抑制（无力）；胸锁乳突肌、上斜方肌和枕下肌过紧。每增加2.5cm头前移，颈椎承受重量增加约4.5kg，是颈部疼痛和头痛的常见原因。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"以下哪种职业人群最容易出现「上交叉综合征」？",
+   opts:["经常搬重物的仓库工人","长时间伏案办公/使用电脑的上班族","专业游泳运动员","户外工作者"],
+   ans:1, exp:"长时间伏案工作（低头+圆肩+头前倾）是上交叉综合征主要原因：胸大/小肌和上斜方肌持续缩短（紧张），深层颈屈肌和中下斜方肌持续拉伸（无力）。这是CPT最常见的客户群体之一。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"「足弓塌陷」最常导致哪个关节出现代偿问题？",
+   opts:["腕关节","膝关节（膝内扣/Valgus）","肩关节","肘关节"],
+   ans:1, exp:"足弓塌陷（过度内旋）引发运动链代偿：足部过度内旋→胫骨内旋→膝关节内扣（Valgus）→髋关节内旋/内收。这是膝关节疼痛和ACL损伤的重要风险因素。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA评估时，应从哪几个方向进行观察？",
+   opts:["只从正面观察","正面、侧面（两侧）和背面，共四个观察角度","只从侧面观察","从上方俯视观察"],
+   ans:1, exp:"标准OHSA观察角度：①正面：观察膝内扣/外翻、脚的位置；②侧面：观察前倾、膝关节、脊柱曲度变化；③背面：观察膝内扣、骨盆旋转。四个方向全面评估动作质量。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"以下哪块肌肉属于「髋外旋肌群」的一部分？",
+   opts:["臀中肌前部","梨状肌（Piriformis）","股直肌（Rectus Femoris）","腓肠肌（Gastrocnemius）"],
+   ans:1, exp:"髋外旋肌群（深层六肌）：梨状肌、闭孔内/外肌、股方肌、上/下孖肌。这组肌肉过紧是脚外旋和髋内旋受限的常见原因，在OHSA脚外旋代偿中需要放松。"},
+
+  {ch:"Ch11-12 姿势评估/OHSA", color:"#D94F3D", bg:"#FDECEA",
+   q:"OHSA中同时出现「膝内扣」和「脚外旋」，说明什么？",
+   opts:["两个代偿没有关联，需分别处理","足踝复合体灵活性不足引发连锁代偿，需从踝关节开始处理","只需强化股四头肌即可","这是正常个体差异，不需要纠正"],
+   ans:1, exp:"脚外旋通常表示踝关节背屈受限，身体以脚外旋来代偿踝关节灵活性不足。踝关节灵活性受限进一步导致膝关节内扣。这是运动链代偿的典型例子，需从根源（踝关节）开始纠正。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「泡沫轴」放松的主要生理机制是？",
+   opts:["通过加热肌肉组织增加弹性","通过持续压力激活GTO引发自生抑制，使肌肉放松","通过振动直接破坏筋膜粘连","通过牵张反射使肌肉强制延长"],
+   ans:1, exp:"SMR（自我筋膜放松）主要通过两种机制：①持续压力激活GTO→自生抑制（肌肉放松）；②增加局部血液循环，改善组织延展性。不是通过物理破坏筋膜，而是通过神经肌肉机制实现放松。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「髋屈肌」拉伸的最佳姿势是？",
+   opts:["仰卧直腿抬高","跪姿弓步前倾（后腿髋部向前推）","站立体前屈","仰卧屈膝抱腿"],
+   ans:1, exp:"跪姿弓步是拉伸髋屈肌（主要是髂腰肌）的经典动作：后腿跪地，骨盆保持中立位，重心前移使后腿髋关节产生伸展。直腿抬高拉伸腘绳肌，体前屈拉伸腘绳肌和竖脊肌。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#EAF7F1",
+   q:"「胸椎灵活性」不足最常导致哪个部位出现代偿性疼痛？",
+   opts:["踝关节","腰椎（下背部）和肩关节","膝关节","颈椎"],
+   ans:1, exp:"胸椎灵活性不足时，旋转或伸展动作会转移到相邻关节代偿：①腰椎（本应稳定的部位被迫旋转→下背痛）；②肩关节（肩胛骨活动受限→肩部撞击综合征）。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「踝关节背屈受限」最常影响哪个运动？",
+   opts:["卧推","深蹲（导致过度前倾或脚跟抬起）","引体向上","肱二头肌弯举"],
+   ans:1, exp:"踝关节背屈在深蹲中至关重要。背屈受限时会出现代偿：①过度躯干前倾；②脚跟抬起；③膝盖无法充分前移。改善踝关节灵活性是改善深蹲动作质量的首要步骤。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「关节灵活性」（Mobility）和「柔韧性」（Flexibility）的核心区别是？",
+   opts:["两者完全相同","柔韧性指肌肉被动拉伸能力；灵活性指关节在控制下主动运动的能力","灵活性只与关节有关，柔韧性只与肌肉有关","柔韧性比灵活性更重要"],
+   ans:1, exp:"柔韧性（Flexibility）：肌肉被动拉长的能力。灵活性（Mobility）：关节在整个活动范围内主动控制运动的能力，包含力量控制。高柔韧性不等于高灵活性。训练应兼顾两者。"},
+
+  {ch:"Ch13 灵活性训练", color:"#3DAA7A", bg:"#E8F8F2",
+   q:"「坐姿腘绳肌拉伸」最常见的代偿错误是？",
+   opts:["膝关节过度伸展","骨盆后倾（弓背）——实际上拉伸了腰椎而非腘绳肌","髋关节过度内旋","肩膀上耸"],
+   ans:1, exp:"坐姿腘绳肌拉伸时，最常见错误是骨盆后倾（背部弓形）——实际是在拉伸腰椎韧带，而非腘绳肌。正确方法：保持骨盆前倾，从髋关节向前折叠，感受大腿后侧拉伸感。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"一位客户目标是减脂，完成4周Phase 1训练，姿势评估无代偿。下一步最合适的是？",
+   opts:["继续Phase 1训练6个月直到姿势完全完美","进入Phase 2（力量耐力），开始超级组训练","直接进入Phase 5爆发力训练以增加能量消耗","停止OPT，改为纯有氧训练"],
+   ans:1, exp:"完成4周Phase 1且评估无代偿，可以进入Phase 2。Phase 2的超级组训练同时维持稳定性，增加训练强度和代谢消耗，对减脂目标非常有效。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"在OPT模型中，关于「节奏」（Tempo）的描述，哪项正确？",
+   opts:["Phase 1节奏应该最快以消耗更多热量","Phase 1使用慢速节奏（如4-2-1）以强化肌肉控制和本体感觉","所有阶段都应使用相同节奏","只有Phase 4才需要控制节奏"],
+   ans:1, exp:"Phase 1（稳定耐力）使用慢速节奏（如4秒离心-2秒等长-1秒向心），目的是增加时间张力、强化神经肌肉控制和本体感觉。随着目标转向力量和爆发力，节奏逐渐加快。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"以下哪组参数对应OPT Phase 4（最大力量）？",
+   opts:["12-20次，3组，休息0-90秒，强度50-70% 1RM","1-5次，4-6组，休息3-5分钟，强度85-100% 1RM","6-12次，3-5组，休息60-90秒，强度75-85% 1RM","8-12次，2-4组，休息0-60秒，强度70-80% 1RM"],
+   ans:1, exp:"OPT各阶段参数：Phase 1：12-20次/50-70%；Phase 2：8-12次（超级组）/70-80%；Phase 3：6-12次/75-85%，休息60-90秒；Phase 4：1-5次/85-100%，休息3-5分钟；Phase 5：爆发力组合训练。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"一位运动员想提高篮球场上的起跳高度，最适合的OPT阶段组合是？",
+   opts:["只进行Phase 1稳定耐力训练","Phase 3（肌肉发展）+ Phase 5（爆发力）交替进行","只进行有氧训练","Phase 1和Phase 2循环进行"],
+   ans:1, exp:"提高运动爆发力的最优路径：先通过Phase 3建立肌肥大基础（更大横截面积=更大力量潜力），再通过Phase 5爆发力训练（跳跃、增强式动作）将力量转化为爆发力（RFD）。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"「功能性训练」（Functional Training）的核心原则是？",
+   opts:["在机器上进行孤立肌肉训练以最大化力量","模拟日常生活或运动中的多关节、多平面运动模式","只使用自由重量，不使用任何机器","专注最大重量训练提高绝对力量"],
+   ans:1, exp:"功能性训练强调多关节、多平面、符合日常生活或运动需求的动作模式（如深蹲模拟起身、硬拉模拟提重物）。目标是提高实际生活或运动中的动作效率和安全性。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"「核心」在NASM的定义包括哪些结构？",
+   opts:["只指腹肌（六块腹肌）","腰椎-骨盆-髋关节复合体（LPHC），包括脊柱、骨盆、腹部和髋部的所有肌肉","只指深层核心肌肉","从肩膀到膝盖的所有躯干肌肉"],
+   ans:1, exp:"NASM对「核心」的定义是腰椎-骨盆-髋关节复合体（LPHC），包括：脊柱（胸椎到骶骨）、骨盆、腹部所有层次肌肉、腰部和髋部肌肉。核心是连接上下肢力量传递的中枢。"},
+
+  {ch:"Ch14-15 OPT模型", color:"#D4820A", bg:"#FEF3DC",
+   q:"「去适应」（Detraining）中，有氧能力开始下降大约在停训后？",
+   opts:["停训后1-2周","停训后3-4天","停训后1年以上","停训后6个月"],
+   ans:0, exp:"有氧能力（VO2max）在停训后约1-2周开始明显下降，数月内可能恢复到训练前水平。肌肉力量下降较慢（约3-5周）。说明即使短期停训也会影响有氧能力，规律训练的重要性。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"针对「膝内扣」客户，纠正性训练的完整流程应该是？",
+   opts:["直接进行臀中肌强化训练","SMR放松内收肌→静态拉伸内收肌→激活臀中肌→整合功能性深蹲","只进行拉伸，不进行力量训练","先强化股四头肌，再放松腘绳肌"],
+   ans:1, exp:"膝内扣纠正性训练（ILAI）：①Inhibit：SMR放松内收肌群、TFL；②Lengthen：静态拉伸内收肌；③Activate：隔离激活臀中肌（蚌式开合、侧卧抬腿）；④Integrate：单腿深蹲等功能性动作整合。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「增强式训练」（Plyometrics）进阶顺序正确的是？",
+   opts:["跳跃→着陆→连续跳跃","着陆控制→跳跃→连续跳跃","连续跳跃→单腿跳→着陆控制","没有固定进阶顺序"],
+   ans:1, exp:"增强式训练NASM进阶：①先学会控制着陆（离心控制）→②学会单次跳跃→③连续跳跃（利用SSC）。安全的着陆技术（软着陆、膝关节对齐）是进行跳跃训练前的必要基础，可预防ACL等损伤。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「核心训练」在OPT训练课中的编排位置是？",
+   opts:["在主要阻力训练之后，冷身之前","在热身和柔韧性训练之后，平衡和爆发力训练之前","在有氧运动之后","在所有训练结束后"],
+   ans:1, exp:"NASM训练课顺序：热身→柔韧性（纠正性）→核心→平衡→爆发力→阻力→冷身。核心训练放在阻力训练前，确保核心激活和稳定状态，提供脊柱保护并提高大肌群训练效率。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"以下哪种情况应该立即停止运动？",
+   opts:["轻微的肌肉酸痛（DOMS）","异常胸痛、呼吸困难、头晕、心悸或关节急性疼痛","轻微气喘（说明强度合适）","训练后轻微疲劳感"],
+   ans:1, exp:"应立即停止运动的警示信号（ACSM标准）：胸痛/胸闷、严重呼吸困难、头晕/恶心/头痛、心悸/心律不齐、急性关节疼痛、意识改变。轻微肌肉酸痛、适度气喘和训练后疲劳是正常的。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「FITT原则」代表什么？",
+   opts:["力量、强度、时间、类型","频率（Frequency）、强度（Intensity）、时间（Time）、类型（Type）","灵活性、强度、时间、技术","频率、间隔、训练、测试"],
+   ans:1, exp:"FITT原则是设计运动处方的框架：F=Frequency（每周几次）、I=Intensity（运动强度）、T=Time（持续时间）、T=Type（运动类型）。这四个变量的组合决定了运动处方的总运动量和适应效果。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「核心稳定性」训练的正确进阶顺序是？",
+   opts:["动态旋转→等长稳定→抗旋转","等长稳定（如平板支撑）→动态稳定（如鸟狗式）→功能性整合","最大力量→耐力→稳定性","先进行屈曲动作，再进行稳定性训练"],
+   ans:1, exp:"NASM核心训练进阶：①等长稳定：平板支撑、死虫、鸟狗式；②动态稳定：稳定球动作，增加不稳定性；③功能性整合：在OPT阻力训练动作中维持核心稳定。从简单静态→复杂动态→功能整合。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「血压」在力量训练中的正常反应是？",
+   opts:["收缩压和舒张压都显著下降","收缩压短暂升高（正常），训练后恢复，长期规律训练有助于降低静息血压","血压不受力量训练影响","舒张压大幅升高是正常的"],
+   ans:1, exp:"力量训练中收缩压正常升高（心输出量增加），训练后血压恢复正常，甚至出现运动后低压现象。长期规律运动对高血压患者静息血压有3-5 mmHg的改善效果。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「分化训练」（Split Training）相比「全身训练」的主要优势是？",
+   opts:["分化训练对初学者更合适","分化训练允许更高的单次训练量和更充分的恢复时间（适合中高级训练者）","分化训练每次可以练到更多肌群","分化训练EPOC效应更大"],
+   ans:1, exp:"分化训练允许同一肌群获得更多训练量和更长恢复时间（48-72小时），适合有一定基础、追求肌肥大的中高级训练者。初学者和训练频率低的人通常用全身训练效果更好。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「自由重量」相比「固定器械」的优势是？",
+   opts:["固定器械更安全，总体上更好","自由重量需要更多肌肉群协同稳定，功能性和神经肌肉激活更高","固定器械能训练到更多肌肉","自由重量适合所有客户，固定器械只适合康复患者"],
+   ans:1, exp:"自由重量（哑铃、杠铃、壶铃）的优势：需要更多肌肉群协同工作（包括稳定肌），神经肌肉激活更高，更符合功能性动作模式，ROM不受器械限制。固定器械适合初学者学习动作模式和单关节孤立训练。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「推」和「拉」动作的训练量应该如何平衡？",
+   opts:["推的动作应该训练量多2倍","推和拉的训练量应大致相等","拉的动作应该比推的动作训练量多，以纠正常见的圆肩问题","只需要训练推动作"],
+   ans:2, exp:"大多数人胸肌和前三角肌（推肌群）相对过强，背部（拉肌群）相对较弱，导致圆肩驼背。NASM建议拉的训练量应略多于推（如2:1），以纠正常见的肌肉不平衡，改善姿势。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「硬拉」（Deadlift）的主要主动肌群是？",
+   opts:["胸大肌、三角肌前束、肱三头肌","臀大肌、腘绳肌、竖脊肌、股四头肌","肱二头肌、菱形肌、冈下肌","腹直肌、腹横肌、多裂肌"],
+   ans:1, exp:"硬拉是最重要的多关节复合动作，主要主动肌：臀大肌（髋伸展）、腘绳肌（髋伸展辅助）、竖脊肌（脊柱伸展/稳定）、股四头肌（膝伸展）。同时需要强大的核心和握力稳定。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「正确的卧推技术」要点包括？",
+   opts:["握距越宽越好，肘关节完全锁死","肩胛骨后缩下沉、自然腰椎弓度、双脚踩地、肘关节约75-80度","握距窄于肩宽，腰部完全贴平凳面","颈椎前伸以增加用力"],
+   ans:1, exp:"安全卧推要点：①肩胛骨后缩下沉（稳定肩胛骨，保护肩关节）；②保持自然腰椎弧度；③双脚踩实地面；④肘关节角度约75-80度（减少肩袖压力）；⑤握距与肩同宽或略宽。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「肌肉平衡」（Muscle Balance）对身体的重要性是？",
+   opts:["只影响外观美观，对功能和健康无影响","主动肌与拮抗肌的力量平衡影响关节稳定性、姿势和受伤风险","只有精英运动员才需要关注","肌肉越强壮越好，不需要考虑平衡"],
+   ans:1, exp:"肌肉平衡是NASM训练设计核心原则：主动肌与拮抗肌力量比例失衡会改变关节力学，增加姿势偏差和损伤风险（如股四头肌/腘绳肌失衡增加ACL损伤风险）。训练计划应确保各肌群均衡发展。"},
+
+  {ch:"Ch19-20 阻力训练设计", color:"#7B5EA7", bg:"#F3EEFF",
+   q:"「肌肉耐力」与「肌肉力量」的主要区别是？",
+   opts:["两者完全相同","肌肉耐力是在较长时间维持肌肉工作的能力；力量是产生最大力的能力","力量训练会降低肌肉耐力","只有专业运动员才需要区分"],
+   ans:1, exp:"肌肉耐力：在次最大负荷下长时间工作的能力（高次数低重量）。肌肉力量：产生最大力的能力（低次数高重量）。Phase 1-2重点发展耐力，Phase 3-4重点发展力量。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"减脂过程中「平台期」出现的主要原因是？",
+   opts:["客户偷吃了不健康食物","身体通过降低基础代谢率（代谢适应）来应对持续热量缺口","运动强度太低，需立即大幅增加","减脂到某点后脂肪细胞无法继续分解"],
+   ans:1, exp:"减脂平台期主要原因：①体重减轻→BMR下降；②身体通过「代谢适应」降低NEAT；③体重减轻→运动时相同动作消耗热量减少。突破方法：调整热量摄入、改变运动方式、增加训练多样性。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"以下哪种减脂策略在长期效果上最有科学依据？",
+   opts:["极低热量饮食（每天500kcal以下）结合大量有氧","适度热量缺口（每天300-500kcal）结合阻力训练和有氧训练的组合","完全依赖有氧运动不改变饮食","间歇性断食是唯一有效的长期减脂方法"],
+   ans:1, exp:"循证减脂最优策略：适度热量缺口（300-500 kcal/天）+ 阻力训练（维持肌肉量、提高BMR）+ 有氧训练（增加热量消耗）。极低热量饮食会导致大量肌肉流失，长期反弹风险极高。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「NEAT」（Non-Exercise Activity Thermogenesis）指的是？",
+   opts:["正式运动训练消耗的热量","非运动性体力活动消耗的热量（如走路、站立、做家务）","基础代谢率消耗的热量","消化食物消耗的热量"],
+   ans:1, exp:"NEAT是一天中除正式运动、睡眠和进食外所有体力活动消耗的热量。个体差异极大（200-2000 kcal/天），是影响总热量消耗的重要因素，增加日常活动量对减脂很有帮助。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「睡眠质量」对体重管理的影响是？",
+   opts:["睡眠与体重管理完全无关","睡眠不足影响饥饿素和瘦素水平，增加食欲，并降低胰岛素敏感性","只有睡眠过多才导致体重增加","睡眠只影响运动表现，不影响体重"],
+   ans:1, exp:"睡眠不足对体重的影响：Ghrelin（饥饿素）↑→食欲增加；Leptin（饱腹素）↓→饱腹感下降；胰岛素敏感性降低；皮质醇↑→促进脂肪储存。充足睡眠（7-9小时）是体重管理的重要组成部分。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"老年人阻力训练的主要生理益处不包括？",
+   opts:["维持和增加骨密度","改善胰岛素敏感性","完全逆转所有与年龄相关的肌肉流失","提高日常活动能力和生活质量"],
+   ans:2, exp:"阻力训练对老年人的好处：维持/增加骨密度、改善胰岛素敏感性、减缓肌少症进程、提高功能性动作能力、减少跌倒风险。「完全逆转」肌少症是夸大说法——阻力训练可显著减缓并部分改善，但不能完全逆转年龄相关肌肉变化。"},
+
+  {ch:"Ch21-22 体重管理/老年人", color:"#E85D4A", bg:"#FDECEA",
+   q:"「行走速度」（Gait Speed）在老年人评估中的意义是？",
+   opts:["行走速度与健康状况无关","行走速度是老年人功能性体能和死亡率风险的有效预测指标","只对有行走障碍的人有评估意义","行走速度越慢说明运动量越大"],
+   ans:1, exp:"研究显示，老年人的正常步行速度（>1.0 m/s）是健康和功能独立性的有效预测指标，与跌倒风险、住院率和死亡率密切相关。步行速度<0.8 m/s是健康风险升高的信号。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「1型糖尿病」与「2型糖尿病」在运动训练中的主要区别是？",
+   opts:["1型糖尿病不能进行任何运动","1型糖尿病需要更密切的血糖监测，胰岛素依赖性更强，低血糖风险更高","2型糖尿病不能进行力量训练","两者的运动训练方案完全相同"],
+   ans:1, exp:"1型糖尿病（胰岛素依赖型）：胰岛素由注射控制，运动中血糖波动更难预测，低血糖风险更高，需更频繁监测血糖。2型糖尿病以口服药物或生活方式控制为主，运动是治疗核心部分。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"孕妇运动时，应避免哪种体位？",
+   opts:["站立位有氧运动","妊娠12周后长时间仰卧位","坐姿阻力训练","水中有氧运动"],
+   ans:1, exp:"妊娠12周后，增大的子宫在仰卧位时会压迫下腔静脉，阻碍静脉回流，导致仰卧位低血压综合征。应避免长时间仰卧位运动，改用坐姿、站姿或侧卧位替代动作。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「关节炎」患者进行运动时，最重要的原则是？",
+   opts:["完全避免活动受影响的关节","在无痛或轻微不适范围内进行低冲击活动，急性发作期休息","只进行水中运动","关节炎客户不能进行任何力量训练"],
+   ans:1, exp:"关节炎运动原则：急性发作（红肿热痛）期减少受影响关节负荷；缓解期：在无痛范围内进行低冲击有氧（游泳、骑车、步行）和适当阻力训练（有助于减轻关节负担）；从低强度开始，监测症状变化。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「哮喘」患者运动时，以下哪种情况最需要注意？",
+   opts:["哮喘患者完全不能进行运动","「运动诱发性支气管痉挛」（EIB）的识别和预防，备好缓解药物","哮喘患者只能进行室内运动","哮喘患者只能进行力量训练"],
+   ans:1, exp:"约80-90%的哮喘患者可能出现运动诱发性支气管痉挛（EIB），通常在运动开始后5-10分钟出现。预防：适当热身、避免寒冷干燥空气、必要时运动前使用吸入器。运动对哮喘长期管理有益，不应完全回避。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「慢性腰痛」客户训练时，最重要的是？",
+   opts:["完全避免所有涉及脊柱的运动","先排除医疗原因，以核心稳定性训练和功能性动作改善为核心","大重量深蹲是改善腰痛最快的方法","只进行拉伸，不进行力量训练"],
+   ans:1, exp:"慢性腰痛处理：①首先排除需要医疗干预的原因；②核心稳定性训练（腹横肌、多裂肌激活）是基础；③改善髋关节灵活性；④渐进性功能性动作训练；研究表明适当运动（非卧床休息）对慢性腰痛预后更好。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「帕金森病」患者运动训练的主要目标是？",
+   opts:["完全治愈帕金森病的运动症状","改善步态、平衡、协调和日常功能，延缓运动症状进展","只进行伸展训练以缓解肌肉僵硬","专注最大力量训练以对抗肌肉僵硬"],
+   ans:1, exp:"帕金森病患者运动目标：改善步态（步幅、步速）；提高平衡能力（减少跌倒）；改善协调；维持力量和灵活性；延缓运动症状进展。拳击训练、舞蹈、太极对帕金森有特定益处。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「抑郁症」患者进行规律运动的效果，研究表明？",
+   opts:["运动对抑郁症没有显著帮助","中等强度规律有氧运动对轻至中度抑郁有显著改善效果","运动会加重抑郁症状","只有无氧运动才对抑郁有帮助"],
+   ans:1, exp:"研究表明，中等强度规律有氧运动（每周3-5次，每次30分钟）对轻至中度抑郁有显著改善效果，某些研究显示效果与抗抑郁药物相当。机制：增加神经递质、促进神经生长因子（BDNF）、改善睡眠和自我效能感。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「多发性硬化症」（MS）患者运动时，最需要注意的是？",
+   opts:["应避免所有形式的运动以防症状加重","避免过热（Uhthoff现象），监控疲劳，在凉爽环境中训练","只进行最高强度训练以最大化效果","MS患者不能进行有氧运动"],
+   ans:1, exp:"MS患者：Uhthoff现象——体温升高会暂时加重MS症状，应在凉爽环境训练，及时补水，避免过热；疲劳是MS最常见症状，训练量从低开始。运动实际上对MS患者有益（改善力量、平衡、疲劳感、心理健康）。"},
+
+  {ch:"Ch23-25 特殊人群", color:"#6DAE6A", bg:"#EDFAEC",
+   q:"「人工关节置换」术后客户，最重要的考量是？",
+   opts:["手术后1年可以进行任何运动","了解并遵守外科医生规定的特定动作禁忌，与医疗团队合作","人工关节比天然关节更强，可进行更高强度训练","只能进行游泳等无冲击运动"],
+   ans:1, exp:"关节置换术后：了解手术类型和医生的动作禁忌（如全髋置换避免髋屈曲>90°、内收越中线、内旋，防止脱位）；在医生许可范围内循序渐进；避免高冲击运动（跑步、跳跃）；与医疗团队密切合作。"},
+
+  {ch:"Ch3-5 解剖生理", color:"#9B6DD1", bg:"#F3EEFF",
+   q:"「交感神经系统」在运动中的作用是？",
+   opts:["降低心率和血压，促进消化，用于休息恢复","增加心率、血压和血液流向肌肉，抑制消化（「战或逃」反应）","只控制骨骼肌的自主收缩","在睡眠中维持基础生命功能"],
+   ans:1, exp:"交感神经系统（「战或逃」）在运动/应激时激活：心率↑、血压↑、血液重分配到工作肌肉、支气管扩张、血糖↑、消化抑制。副交感神经（「休息消化」）在运动后恢复阶段主导。"},
+
+  {ch:"Ch6-7 运动科学/营养", color:"#2D9E6B", bg:"#EAF7F1",
+   q:"「生物电阻抗分析」（BIA）测量体成分时，影响准确性的主要因素是？",
+   opts:["测量时间和天气","身体水分状态（水化程度）——脱水会高估体脂率","运动强度","测量者的身高体重"],
+   ans:1, exp:"BIA通过测量身体对低电流的阻抗估算体成分。准确性高度依赖身体水分状态：脱水→阻抗增加→高估体脂率。测量前应保持正常水化，避免运动后、饮酒后、月经期测量。误差约±3-5%。"},
+
+  {ch:"Ch16-18 纠正性训练/心肺", color:"#3A72C8", bg:"#EBF1FC",
+   q:"「抗阻有氧训练」中「干扰效应」（Interference Effect）是指？",
+   opts:["两种训练方式相互促进，效果叠加","同一训练课内大量有氧训练后，可能削弱力量/肌肥大适应","力量训练会完全抵消有氧训练效果","干扰效应只在初学者身上出现"],
+   ans:1, exp:"干扰效应：同一训练课内高量有氧可能通过激活AMPK通路抑制mTOR通路（肌肉合成信号），削弱力量/肌肥大适应。减少干扰策略：将力量和有氧训练分开；如必须同天，先做力量后做有氧。"}
+
+];
+
+// ════════════════════════════════════════════════
+// 本地存储
+// ════════════════════════════════════════════════
+const STORE_KEY = "nasm_quiz_v3";
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {answered:{},wrong:[],bookmarks:[]}; }
+  catch { return {answered:{},wrong:[],bookmarks:[]}; }
+}
+function saveStore(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+let store = loadStore();
+
+// ════════════════════════════════════════════════
+// 首页
+// ════════════════════════════════════════════════
+const CHAPTERS = [...new Set(QUESTIONS.map(q=>q.ch))];
+const CH_ICONS = ["📋","🦴","⚡","🧠","🤸","🔍","📊","🏃","💪","👶","🌿","❤️"];
+
+function buildHome() {
+  const total   = Object.keys(store.answered).length;
+  const correct = Object.values(store.answered).filter(v=>v===true).length;
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statAcc").textContent = total ? Math.round(correct/total*100)+"%" : "—";
+  document.getElementById("statWrong").textContent = store.wrong.length;
+
+  const list = document.getElementById("chapterList");
+  list.innerHTML = "";
+  CHAPTERS.forEach((ch,ci) => {
+    const qs = QUESTIONS.filter(q=>q.ch===ch);
+    const done = qs.filter(q=>store.answered[QUESTIONS.indexOf(q)]!==undefined).length;
+    const pct  = done / qs.length;
+    const hasWrong = qs.some(q=>store.wrong.includes(QUESTIONS.indexOf(q)));
+    const q0 = qs[0];
+    const card = document.createElement("div");
+    card.className = "chapter-card" + (hasWrong ? " has-wrong" : "");
+    card.innerHTML = `
+      <div class="ch-icon" style="background:${q0.bg}">${CH_ICONS[ci]||"📚"}</div>
+      <div class="ch-info">
+        <div class="ch-name">${ch}</div>
+        <div class="ch-meta">${done}/${qs.length} 题已练习${hasWrong?' · 有错题':''}</div>
+        <div class="ch-progress"><div class="ch-progress-fill" style="width:${pct*100}%;background:${q0.color}"></div></div>
+      </div>
+      <div class="ch-arrow">›</div>`;
+    card.onclick = () => startQuiz(ch);
+    list.appendChild(card);
+  });
+  document.getElementById("wrongBtn").style.display = store.wrong.length ? "block" : "none";
+}
+
+// ════════════════════════════════════════════════
+// 答题逻辑
+// ════════════════════════════════════════════════
+let queue=[], qi=0, sessionRight=0, sessionWrong=0;
+
+function startQuiz(mode) {
+  if (mode==="all") queue = shuffle([...QUESTIONS.keys()]);
+  else if (mode==="wrong") { if (!store.wrong.length){alert("暂无错题！");return;} queue=shuffle([...store.wrong]); }
+  else queue = shuffle(QUESTIONS.map((q,i)=>({q,i})).filter(x=>x.q.ch===mode).map(x=>x.i));
+  qi=0; sessionRight=0; sessionWrong=0;
+  showPage("quiz");
+  document.getElementById("progressBar").style.display="block";
+  document.getElementById("backBtn").style.display="inline";
+  document.getElementById("topTitle").textContent = mode==="all"?"随机练习":mode==="wrong"?"错题练习":mode;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  if (qi>=queue.length){showResult();return;}
+  const idx=queue[qi], q=QUESTIONS[idx], total=queue.length;
+  document.getElementById("qCounter").textContent=`${qi+1} / ${total}`;
+  document.getElementById("qChapterTag").textContent=q.ch;
+  document.getElementById("qText").textContent=q.q;
+  document.getElementById("explanation").classList.remove("show");
+  document.getElementById("expText").textContent=q.exp;
+  document.getElementById("nextBtn").style.display="none";
+  document.getElementById("progressFill").style.width=(qi/total*100)+"%";
+  document.getElementById("topBadge").textContent=`${qi+1}/${total}`;
+  const bm=document.getElementById("bookmark");
+  bm.textContent=store.bookmarks.includes(idx)?"★":"☆";
+  const opts=document.getElementById("options");
+  opts.innerHTML="";
+  const letters=["A","B","C","D"];
+  q.opts.forEach((text,i)=>{
+    const div=document.createElement("div");
+    div.className="option";
+    div.innerHTML=`<div class="opt-dot">${letters[i]}</div><div>${text}</div>`;
+    div.onclick=()=>selectAnswer(i,q.ans,idx);
+    opts.appendChild(div);
+  });
+  document.getElementById("quiz").classList.remove("fade-up");
+  void document.getElementById("quiz").offsetWidth;
+  document.getElementById("quiz").classList.add("fade-up");
+}
+
+function selectAnswer(selected,correct,idx) {
+  const opts=document.querySelectorAll(".option");
+  opts.forEach((el,i)=>{
+    el.onclick=null;
+    if(i===correct) el.classList.add("correct");
+    else if(i===selected&&selected!==correct) el.classList.add("wrong");
+    else el.classList.add("dim");
+  });
+  const isRight=selected===correct;
+  if(isRight){sessionRight++;store.answered[idx]=true;store.wrong=store.wrong.filter(x=>x!==idx);}
+  else{sessionWrong++;store.answered[idx]=false;if(!store.wrong.includes(idx))store.wrong.push(idx);}
+  saveStore(store);
+  document.getElementById("explanation").classList.add("show");
+  const nb=document.getElementById("nextBtn");
+  nb.style.display="block";
+  nb.textContent=qi+1>=queue.length?"查看结果":"继续下一题";
+}
+
+function nextQuestion(){qi++;renderQuestion();}
+
+function toggleBookmark(){
+  const idx=queue[qi];
+  const i=store.bookmarks.indexOf(idx);
+  if(i>=0)store.bookmarks.splice(i,1); else store.bookmarks.push(idx);
+  saveStore(store);
+  document.getElementById("bookmark").textContent=store.bookmarks.includes(idx)?"★":"☆";
+}
+
+function showResult(){
+  const total=queue.length, pct=Math.round(sessionRight/total*100);
+  document.getElementById("resultEmoji").textContent=pct>=80?"🎉":pct>=60?"💪":"📖";
+  document.getElementById("resultTitle").textContent=pct>=80?"太棒了！":pct>=60?"继续加油！":"多练练吧～";
+  document.getElementById("resultSub").textContent=`正确率 ${pct}%，共完成 ${total} 题`;
+  document.getElementById("rs1").textContent=sessionRight;
+  document.getElementById("rs2").textContent=sessionWrong;
+  document.getElementById("rs3").textContent=pct+"%";
+  document.getElementById("rs4").textContent=store.bookmarks.length;
+  document.getElementById("retryWrongBtn").style.display=sessionWrong>0?"block":"none";
+  showPage("result");
+  document.getElementById("progressFill").style.width="100%";
+}
+
+function showPage(name){
+  ["home","quiz","result"].forEach(p=>{document.getElementById(p).style.display=p===name?"block":"none";});
+}
+function goHome(){
+  showPage("home");
+  document.getElementById("progressBar").style.display="none";
+  document.getElementById("backBtn").style.display="none";
+  document.getElementById("topTitle").textContent="NASM-CPT 刷题";
+  document.getElementById("topBadge").textContent="";
+  buildHome();
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+
+buildHome();
+</script>
+</body>
+</html>
